@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge'; // Added import
+import { Badge } from '@/components/ui/badge';
 import { Briefcase, Users, DollarSign, ShieldCheck, MessageCircle, Search, CreditCard, Lock, Zap, Award } from 'lucide-react';
 import { Icons } from '@/components/icons';
 
@@ -192,10 +192,13 @@ export default function LandingPage() {
         ))}
       </Head>
 
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-background to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-100 via-blue-50 to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Hero Section */}
-        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/e0f2fe/334257?text=Tech+Collage')" }} data-ai-hint="digital services collage">
+        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/41a7fc/FFFFFF?text=Dynamic+Tech+Background')" }} data-ai-hint="digital services collage">
           <div className="container mx-auto px-4 bg-black/30 dark:bg-black/50 py-10 rounded-xl backdrop-blur-sm">
+            <Link href="/" className="inline-block mx-auto mb-8">
+              <Icons.Logo className="h-20 w-20 text-primary transition-transform duration-300 hover:scale-110" />
+            </Link>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight">
               Plataforma para Compartir Suscripciones y <span className="text-primary">Dividir Gastos</span> de Forma Segura
             </h1>
@@ -208,7 +211,7 @@ export default function LandingPage() {
                   <Search className="mr-2" /> Explorar Grupos
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 shadow-lg transform hover:scale-105 transition-transform duration-300">
+              <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 shadow-lg transform hover:scale-105 transition-transform duration-300 bg-white/10 hover:bg-white/20">
                 <Link href="/login">
                   <Users className="mr-2" /> Registrarse para Ahorrar
                 </Link>
