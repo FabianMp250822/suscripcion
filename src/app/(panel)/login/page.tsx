@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type FormEvent } from "react";
@@ -33,10 +34,47 @@ export default function LoginPage() {
         setIsLogin(true); // Switch to login form after sign up
       }
     } catch (error: any) {
-      console.error("Authentication error:", error);
+      console.error("Authentication error:", error.code, error.message);
+      let toastTitle = isLogin ? "Login Failed" : "Sign Up Failed";
+      let toastDescription = "An unexpected error occurred. Please try again.";
+
+      if (error.code) {
+        switch (error.code) {
+          case 'auth/invalid-credential':
+            toastDescription = isLogin ?
+              "Incorrect email or password. If you don't have an account, please click 'Sign Up' below." :
+              "Could not process your request. Please check the details and try again.";
+            break;
+          case 'auth/user-not-found': // Often masked by invalid-credential
+            toastTitle = "Login Failed";
+            toastDescription = "No account found with this email. Please 'Sign Up' or check the email address.";
+            break;
+          case 'auth/wrong-password': // Often masked by invalid-credential
+            toastTitle = "Login Failed";
+            toastDescription = "Incorrect password. Please try again.";
+            break;
+          case 'auth/email-already-in-use':
+            toastTitle = "Sign Up Failed";
+            toastDescription = "This email address is already registered. Please try logging in.";
+            // setIsLogin(true); // Optionally switch to login form
+            break;
+          case 'auth/weak-password':
+            toastTitle = "Sign Up Failed";
+            toastDescription = "The password is too weak. It must be at least 6 characters long.";
+            break;
+          case 'auth/invalid-email':
+            toastDescription = "The email address is not valid. Please check and try again.";
+            break;
+          default:
+            toastDescription = error.message || toastDescription;
+        }
+      } else {
+        toastDescription = error.message || toastDescription;
+      }
+      
       toast({
-        title: "Authentication Failed",
-        description: error.message || "An unexpected error occurred.",
+        title: toastTitle,
+        description: toastDescription,
         variant: "destructive",
       });
     } finally {
@@ -52,7 +90,7 @@ export default function LoginPage() {
       toast({ title: "Login Successful", description: "Welcome!" });
       router.push("/");
     } catch (error: any) {
-      console.error("Google Sign-In error:", error);
+      console.error("Google Sign-In error:", error.code, error.message);
       toast({
         title: "Google Sign-In Failed",
         description: error.message || "Could not sign in with Google.",
