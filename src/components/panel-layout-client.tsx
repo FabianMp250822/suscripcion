@@ -68,7 +68,7 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
       router.replace("/login");
     }
     if (!loading && user && pathname === "/login") {
-        if (isAdmin) router.replace("/users"); // Default admin page
+        if (isAdmin) router.replace("/users"); 
         else if (isSharer) router.replace("/my-listings"); 
         else router.replace("/browse-groups"); 
     }
@@ -101,31 +101,26 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
     if (isSharer) {
       currentUserRoles.push("sharer");
     }
-    // A user can be a subscriber even if they are also a sharer, or if they are only a subscriber.
-    // If they are not admin and have no specific roles from Firestore yet, default to subscriber.
     if (isSubscriber || (!isSharer && !isSubscriber)) { 
       currentUserRoles.push("subscriber");
     }
   }
-  // Fallback for users with no specific roles from Firestore yet, but are authenticated (should be rare with current AuthContext logic)
   if (user && currentUserRoles.length === 0 && !isAdmin) {
-    currentUserRoles.push("subscriber"); // Default to subscriber if authenticated but no specific roles (excluding admin)
+    currentUserRoles.push("subscriber");
   }
 
 
   const accessibleNavItems = navItems.filter(item => {
-    if (item.allowedRoles.length === 0) return true; // No roles specified means accessible to all
+    if (item.allowedRoles.length === 0) return true; 
     return item.allowedRoles.some(role => currentUserRoles.includes(role));
   });
   
   const getActiveSegment = () => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 0) {
-        // Specific handling for /manage-group/[groupId] to keep /my-listings active for sharers
         if (segments[0] === 'manage-group' && segments.length > 1 && isSharer) {
             return 'my-listings'; 
         }
-        // Specific handling for admin nested routes
         if (currentUserRoles.includes('admin') && segments.length > 0){
             return segments[0];
         }
@@ -137,15 +132,11 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   
   const isLinkActive = (item: NavItem) => {
     if (item.segment) {
-      // For admin, check if the current path starts with the item's href
-      // (e.g., /users/detail should make /users active)
-      // For non-admins or items without sub-routes, direct segment match is fine.
       if (currentUserRoles.includes('admin') && pathname.startsWith(item.href)) {
          return activeSegment === item.segment;
       }
       return activeSegment === item.segment;
     }
-    // Fallback for items without a specific segment, direct href match
     return pathname === item.href;
   };
 
@@ -203,4 +194,3 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
     </SidebarProvider>
   );
 }
-
