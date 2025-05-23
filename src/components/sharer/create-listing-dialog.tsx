@@ -17,17 +17,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldAlert, PlusCircle } from "lucide-react";
+import { ShieldAlert, PlusCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
-import { Icons } from "@/components/icons"; // Added this import
+import { Icons } from "@/components/icons";
 
 interface CreateListingDialogProps {
-  // onListingCreated callback is removed as we're now writing directly to Firestore
-  // and the list will update via a Firestore listener or re-fetch (not implemented here).
-  children: React.ReactNode; // To wrap the trigger button
+  children: React.ReactNode;
 }
 
 export function CreateListingDialog({ children }: CreateListingDialogProps) {
@@ -41,6 +39,15 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const resetForm = () => {
+    setPlatformName("");
+    setExternalUsername("");
+    setExternalPassword("");
+    setDesiredPricePerSlot("");
+    setTotalSlots("");
+    setConfirm2FA(false);
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -60,47 +67,49 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
       });
       return;
     }
+    if (!platformName || !externalUsername || !externalPassword || !desiredPricePerSlot || !totalSlots) {
+        toast({
+            title: "Missing Fields",
+            description: "Please fill out all required fields.",
+            variant: "destructive",
+        });
+        return;
+    }
 
     setIsSubmitting(true);
 
     const newListingData = {
       serviceName: platformName,
-      externalCredentials: { // Placeholder for how you might structure this securely
-        username: externalUsername,
-        // password: externalPassword, // IMPORTANT: Password should be handled securely by backend, never stored client-side like this or directly in Firestore plain text
-      },
-      desiredPricePerSpot: parseFloat(desiredPricePerSlot),
+      // IMPORTANT: In a real app, externalUsername and externalPassword would be sent to a secure backend (e.g., Cloud Function)
+      // to be encrypted or handled, not directly to Firestore. For this example, we are simulating this.
+      // For added security in this example, we are NOT storing externalPassword in Firestore.
+      // A real backend would handle credential encryption and management.
+      externalUsername: externalUsername, // Store username if needed for reference, but consider encryption
+      pricePerSpot: parseFloat(desiredPricePerSlot), // This is the sharer's desired price
       totalSpots: parseInt(totalSlots),
-      spotsAvailable: parseInt(totalSlots), // Initially all spots are available
-      sharerId: user.uid, // Make sure sharerId is the current user's UID
-      status: "Recruiting", // Initial status
-      iconUrl: `https://placehold.co/64x64.png?text=${platformName.substring(0,1).toUpperCase() || 'P'}`, // Placeholder icon
+      spotsAvailable: parseInt(totalSlots), 
+      sharerId: user.uid, 
+      status: "Recruiting", 
+      iconUrl: `https://placehold.co/64x64.png?text=${platformName.substring(0,1).toUpperCase() || 'P'}`, 
       createdAt: serverTimestamp(),
-      // Add any other necessary fields: description, terms, etc.
+      sharerName: user.displayName || user.email?.split('@')[0] || "Usuario", // Add sharer's display name
+      sharerAvatar: user.photoURL || `https://placehold.co/40x40.png?text=${user.displayName?.substring(0,1) || 'U'}`, // Add sharer's avatar
+      // Placeholder for reputation fields, ideally these are updated via Cloud Functions
+      ownerReputation: null, 
+      totalRatings: 0,
+      isActive: true, // Default to active
+      popularity: 0, // Default popularity
     };
 
     try {
-      // IMPORTANT: In a real app, externalPassword would be sent to a secure backend (e.g., Cloud Function)
-      // to be encrypted or handled, not directly to Firestore.
-      // For now, we are proceeding without storing the password directly in this client-side example.
-      // You'd typically encrypt `externalUsername` and `externalPassword` securely on a backend.
-      // The `externalCredentials.password` field is intentionally omitted from `newListingData` for this client-side example.
-      // A secure backend function would handle it.
-
-      const docRef = await addDoc(collection(db, "listings"), newListingData);
+      await addDoc(collection(db, "listings"), newListingData);
       
       toast({
         title: "Listing Submitted!",
         description: `${platformName} has been listed. It will appear once data is fetched.`,
       });
 
-      // Reset form and close dialog
-      setPlatformName("");
-      setExternalUsername("");
-      setExternalPassword("");
-      setDesiredPricePerSlot("");
-      setTotalSlots("");
-      setConfirm2FA(false);
+      resetForm();
       setIsOpen(false);
     } catch (error) {
       console.error("Error adding listing to Firestore: ", error);
@@ -115,7 +124,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
@@ -126,7 +135,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
             Provide details of the external subscription you want to share.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-3"> {/* Added scrollability here */}
           <Alert variant="destructive" className="bg-orange-50 border-orange-300 text-orange-700">
             <ShieldAlert className="h-5 w-5 !text-orange-600" />
             <AlertTitle className="font-semibold !text-orange-800">Important Security Notice</AlertTitle>
@@ -143,7 +152,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
           </div>
           <div>
             <Label htmlFor="externalUsername">External Platform Username/Email</Label>
-            <Input id="externalUsername" type="email" value={externalUsername} onChange={(e) => setExternalUsername(e.target.value)} placeholder="user@example.com" required />
+            <Input id="externalUsername" type="text" value={externalUsername} onChange={(e) => setExternalUsername(e.target.value)} placeholder="user@example.com" required />
           </div>
           <div>
             <Label htmlFor="externalPassword">External Platform Password</Label>
@@ -153,6 +162,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
           <div>
             <Label htmlFor="desiredPricePerSlot">Price I want to receive per slot (USD per month)</Label>
             <Input id="desiredPricePerSlot" type="number" value={desiredPricePerSlot} onChange={(e) => setDesiredPricePerSlot(e.target.value)} placeholder="5.00" step="0.01" min="0" required />
+            <p className="text-xs text-muted-foreground mt-1">Subscribers will see a final price including SuscripGrupo's service fee. Payments via Stripe.</p>
           </div>
            <div>
             <Label htmlFor="totalSlots">Total Available Spots in Subscription</Label>
@@ -171,11 +181,11 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
             </div>
           </div>
 
-          <DialogFooter className="pt-4">
+          <DialogFooter className="pt-4 sticky bottom-0 bg-background pb-1"> {/* Ensure footer is visible */}
             <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={isSubmitting || !user}>
+            <Button type="submit" disabled={isSubmitting || !user || !confirm2FA}>
                 {isSubmitting ? (
                   <>
                     <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />
