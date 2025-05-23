@@ -97,16 +97,14 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   const currentUserRoles: ("admin" | "sharer" | "subscriber")[] = [];
   if (isAdmin) {
     currentUserRoles.push("admin");
-  } else { // Non-admin users can be sharer, subscriber, or both
+  } else { 
     if (isSharer) {
       currentUserRoles.push("sharer");
     }
-    if (isSubscriber) {
-      // Ensure subscriber role is added if user is sharer or explicitly subscriber.
-      // This covers cases where a user might primarily be a sharer but still acts as a subscriber for other services.
-      if (!currentUserRoles.includes("subscriber")) {
-          currentUserRoles.push("subscriber");
-      }
+    // A user can be a subscriber even if they are also a sharer, or if they are only a subscriber.
+    // If they are not admin and have no specific roles from Firestore yet, default to subscriber.
+    if (isSubscriber || (!isSharer && !isSubscriber)) { 
+      currentUserRoles.push("subscriber");
     }
   }
   // Fallback for users with no specific roles from Firestore yet, but are authenticated (should be rare with current AuthContext logic)
@@ -127,6 +125,10 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
         if (segments[0] === 'manage-group' && segments.length > 1 && isSharer) {
             return 'my-listings'; 
         }
+        // Specific handling for admin nested routes
+        if (currentUserRoles.includes('admin') && segments.length > 0){
+            return segments[0];
+        }
         return segments[0];
     }
     return "";
@@ -135,6 +137,12 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   
   const isLinkActive = (item: NavItem) => {
     if (item.segment) {
+      // For admin, check if the current path starts with the item's href
+      // (e.g., /users/detail should make /users active)
+      // For non-admins or items without sub-routes, direct segment match is fine.
+      if (currentUserRoles.includes('admin') && pathname.startsWith(item.href)) {
+         return activeSegment === item.segment;
+      }
       return activeSegment === item.segment;
     }
     // Fallback for items without a specific segment, direct href match
