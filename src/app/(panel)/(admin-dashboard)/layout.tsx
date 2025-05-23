@@ -1,3 +1,4 @@
+
 "use client";
 import type { ReactNode } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -27,7 +28,7 @@ export default function AdminDashboardLayout({ children }: { children: ReactNode
   if (!isAdmin) {
      return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <Icons.Users className="h-16 w-16 text-destructive mb-4" />
+        <Icons.AdminAccessDeniedIcon className="h-16 w-16 text-destructive mb-4" />
         <h1 className="text-2xl font-semibold text-destructive">Access Denied</h1>
         <p className="text-muted-foreground mt-2">You do not have permission to view this page.</p>
       </div>

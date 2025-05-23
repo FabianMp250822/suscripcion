@@ -27,7 +27,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   PanelLeft,
-  MessageSquare, 
+  MessageSquare,
   Search, // Added for Browse Groups
   HandCoins, // Added for Admin Payment Transactions
   Filter, // Added for filtering
@@ -35,6 +35,8 @@ import {
   Edit, // For edit actions
   ReceiptText, // Alternative for payment history/transactions
   ListFilter, // For filter button
+  Gavel,      // Added for Disputes
+  ShieldAlert // For security/access related alerts
 } from "lucide-react";
 
 export const Icons = {
@@ -48,7 +50,7 @@ export const Icons = {
   Earnings: DollarSign,
   MyActiveSubscriptions: CheckCircle,
   PaymentHistory: History, // Subscriber's own payment history
-  Messages: MessageSquare, 
+  Messages: MessageSquare,
   Login: LogIn,
   Logout: LogOut,
   Moon,
@@ -61,14 +63,16 @@ export const Icons = {
   ChevronsLeft,
   ChevronsRight,
   PanelLeft,
-  BrowseGroups: Search, 
+  BrowseGroups: Search,
   AdminPaymentTransactions: HandCoins, // For admin payment management
   Filter,
   Eye,
   Edit,
   ReceiptText,
   ListFilter,
+  Disputes: Gavel, // For Admin Disputes
+  MyDisputes: Gavel, // For User's own disputes (can be same icon)
+  AdminAccessDeniedIcon: ShieldAlert, // Icon for Admin Access Denied messages
 };
 
 export type Icon = keyof typeof Icons;
-
