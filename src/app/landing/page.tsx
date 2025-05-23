@@ -78,10 +78,10 @@ const faqItems = [
 ];
 
 const availableSubscriptionsMock = [
-  { id: "s1", name: "Netflix Premium", type: "Cupo en Plan Familiar 4K", price: 3.99, currency: "USD", availability: "2 cupos disponibles", icon: "https://placehold.co/80x80.png?text=N", dataAiHint: "netflix logo" },
-  { id: "s2", name: "Spotify Premium", type: "Lugar en Plan Dúo", price: 2.75, currency: "USD", availability: "1 cupo disponible", icon: "https://placehold.co/80x80.png?text=S", dataAiHint: "spotify logo" },
-  { id: "s3", name: "HBO Max Standard", type: "Acceso Compartido", price: 4.50, currency: "USD", availability: "3 cupos disponibles", icon: "https://placehold.co/80x80.png?text=H", dataAiHint: "hbo logo" },
-  { id: "s4", name: "Disney+ Anual", type: "Cupo en Plan Familiar", price: 2.00, currency: "USD", availability: "SOLD OUT", icon: "https://placehold.co/80x80.png?text=D", dataAiHint: "disney logo" },
+  { id: "s1", name: "Netflix Premium", type: "Cupo en Plan Familiar 4K", price: 3.99, currency: "USD", availability: "2 cupos disponibles", icon: "https://placehold.co/80x80.png/1DBF73/FFFFFF?text=N", dataAiHint: "netflix logo" },
+  { id: "s2", name: "Spotify Premium", type: "Lugar en Plan Dúo", price: 2.75, currency: "USD", availability: "1 cupo disponible", icon: "https://placehold.co/80x80.png/1ED760/FFFFFF?text=S", dataAiHint: "spotify logo" },
+  { id: "s3", name: "HBO Max Standard", type: "Acceso Compartido", price: 4.50, currency: "USD", availability: "3 cupos disponibles", icon: "https://placehold.co/80x80.png/A65FF9/FFFFFF?text=H", dataAiHint: "hbo logo" },
+  { id: "s4", name: "Disney+ Anual", type: "Cupo en Plan Familiar", price: 2.00, currency: "USD", availability: "SOLD OUT", icon: "https://placehold.co/80x80.png/0F5BC2/FFFFFF?text=D", dataAiHint: "disney logo" },
 ];
 
 const trustPillars = [
@@ -192,17 +192,17 @@ export default function LandingPage() {
         ))}
       </Head>
 
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-100 via-blue-50 to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-200 via-blue-100 to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Hero Section */}
-        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/41a7fc/FFFFFF?text=Dynamic+Tech+Background')" }} data-ai-hint="digital services collage">
-          <div className="container mx-auto px-4 bg-black/30 dark:bg-black/50 py-10 rounded-xl backdrop-blur-sm">
-            <Link href="/" className="inline-block mx-auto mb-8">
+        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/41a7fc/FFFFFF?text=Tech+Background')" }} data-ai-hint="digital services collage abstract">
+          <div className="container mx-auto px-4 bg-black/40 dark:bg-black/60 py-10 rounded-xl backdrop-blur-md">
+            <Link href="/" className="inline-block mx-auto mb-6">
               <Icons.Logo className="h-20 w-20 text-primary transition-transform duration-300 hover:scale-110" />
             </Link>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight">
               Plataforma para Compartir Suscripciones y <span className="text-primary">Dividir Gastos</span> de Forma Segura
             </h1>
-            <p className="text-lg md:text-xl text-slate-200 mb-10 max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-slate-100 dark:text-slate-200 mb-10 max-w-3xl mx-auto">
               Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza y gestionando tus grupos de forma sencilla.
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
@@ -211,7 +211,7 @@ export default function LandingPage() {
                   <Search className="mr-2" /> Explorar Grupos
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 shadow-lg transform hover:scale-105 transition-transform duration-300 bg-white/10 hover:bg-white/20">
+              <Button asChild size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 shadow-lg transform hover:scale-105 transition-transform duration-300">
                 <Link href="/login">
                   <Users className="mr-2" /> Registrarse para Ahorrar
                 </Link>
@@ -348,3 +348,5 @@ export default function LandingPage() {
     </>
   );
 }
+
+    
