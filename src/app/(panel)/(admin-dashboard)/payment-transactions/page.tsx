@@ -243,7 +243,7 @@ export default function PaymentTransactionsPage() {
           <CardContent className="grid gap-6 md:grid-cols-2">
             <div className="flex flex-col justify-center space-y-2 p-4 border rounded-lg bg-muted/50">
                 <Label className="text-sm font-medium text-muted-foreground">Ganancias Totales de la Plataforma</Label>
-                <div className="text-3xl font-bold">${totalPlatformEarnings.toFixed(2)}</div> 
+                <div className="text-3xl font-bold">€{totalPlatformEarnings.toFixed(2)}</div> 
                 <p className="text-xs text-muted-foreground">Calculado de todas las transacciones completadas.</p>
             </div>
              <div className="h-[250px] p-4 border rounded-lg">
@@ -257,6 +257,7 @@ export default function PaymentTransactionsPage() {
                         <p className="text-muted-foreground">No hay datos para mostrar en el gráfico.</p>
                     </div>
                 ) : (
+                  <ChartContainer config={chartConfig} className="h-full w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <RechartsBarChart data={platformChartData}>
                             <XAxis dataKey="month" stroke="hsl(var(--foreground))" fontSize={12} />
@@ -265,13 +266,14 @@ export default function PaymentTransactionsPage() {
                                 contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)'}} 
                                 labelStyle={{ color: 'hsl(var(--foreground))' }}
                                 itemStyle={{ color: 'hsl(var(--foreground))' }}
-                                formatter={(value, name) => [`$${(value as number).toFixed(2)}`, chartConfig[name as keyof typeof chartConfig]?.label || name]}
+                                formatter={(value, name) => [`€${(value as number).toFixed(2)}`, chartConfig[name as keyof typeof chartConfig]?.label || name]}
                             />
                             <RechartsLegend formatter={(value) => chartConfig[value as keyof typeof chartConfig]?.label || value} />
                             <Bar dataKey="platformEarnings" fill="var(--color-platformEarnings)" radius={[4, 4, 0, 0]} name="platformEarnings" />
                             <Bar dataKey="totalVolume" fill="var(--color-totalVolume)" radius={[4, 4, 0, 0]} name="totalVolume" />
                         </RechartsBarChart>
                     </ResponsiveContainer>
+                  </ChartContainer>
                 )}
              </div>
           </CardContent>
@@ -337,9 +339,9 @@ export default function PaymentTransactionsPage() {
                           {tx.servicioNombre}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-medium">${tx.montoPagadoPorPagador.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-medium">${tx.montoParaPropietario.toFixed(2)}</TableCell>
-                    <TableCell className="text-right font-medium text-green-600">${tx.gananciaPlataforma.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">€{tx.montoPagadoPorPagador.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">€{tx.montoParaPropietario.toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium text-green-600">€{tx.gananciaPlataforma.toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeVariant(tx.estado)}>{tx.estado}</Badge>
                     </TableCell>
@@ -405,13 +407,13 @@ export default function PaymentTransactionsPage() {
                     <span>{selectedTransaction.servicioNombre}</span>
                 </div>
                 <Label className="text-right font-semibold">Monto Pagado (Pagador):</Label>
-                <span className="font-semibold">${selectedTransaction.montoPagadoPorPagador.toFixed(2)}</span>
+                <span className="font-semibold">€{selectedTransaction.montoPagadoPorPagador.toFixed(2)}</span>
                 
                 <Label className="text-right font-semibold">Monto para Propietario:</Label>
-                <span className="font-semibold">${selectedTransaction.montoParaPropietario.toFixed(2)}</span>
+                <span className="font-semibold">€{selectedTransaction.montoParaPropietario.toFixed(2)}</span>
                 
                 <Label className="text-right font-semibold">Ganancia Plataforma:</Label>
-                <span className="font-semibold text-green-600">${selectedTransaction.gananciaPlataforma.toFixed(2)}</span>
+                <span className="font-semibold text-green-600">€{selectedTransaction.gananciaPlataforma.toFixed(2)}</span>
 
                 <Label className="text-right font-semibold">Fecha:</Label>
                 <span>{format(new Date(selectedTransaction.fecha), "dd/MM/yyyy HH:mm")}</span>
