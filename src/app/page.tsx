@@ -17,8 +17,8 @@ export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
       <Icons.Logo className="h-12 w-12 text-primary animate-spin mb-4" />
-      <h1 className="text-2xl font-semibold text-foreground mb-2">Loading Firebase Subscription Hub...</h1>
-      <p className="text-muted-foreground">Please wait while we direct you.</p>
+      <h1 className="text-2xl font-semibold text-foreground mb-2">Cargando SuscripGrupo...</h1>
+      <p className="text-muted-foreground">Por favor, espera mientras te dirigimos.</p>
       <div className="mt-8 space-y-2 w-full max-w-md">
         <Skeleton className="h-8 w-full" />
         <Skeleton className="h-8 w-full" />

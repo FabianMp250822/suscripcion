@@ -1,5 +1,6 @@
-# Firebase Studio
 
-This is a NextJS starter in Firebase Studio.
+# SuscripGrupo
 
-To get started, take a look at src/app/page.tsx.
+Esta es una aplicación de inicio de NextJS para SuscripGrupo, construida en Firebase Studio.
+
+Para empezar, echa un vistazo a src/app/landing/page.tsx.

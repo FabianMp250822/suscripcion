@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Firebase Subscription Hub",
-  description: "Manage and share subscriptions with ease.",
+  title: "SuscripGrupo: Comparte y Ahorra",
+  description: "Comparte y ahorra en tus suscripciones favoritas con SuscripGrupo.",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="es" className="h-full">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-full`}
       >

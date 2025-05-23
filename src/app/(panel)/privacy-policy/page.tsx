@@ -11,52 +11,51 @@ export default function PrivacyPolicyPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-8 w-8 text-primary" />
-            <CardTitle className="text-2xl">Privacy Policy</CardTitle>
+            <CardTitle className="text-2xl">Política de Privacidad de SuscripGrupo</CardTitle>
           </div>
           <CardDescription>
-            Your privacy is important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.
+            Tu privacidad es importante para nosotros. Esta Política de Privacidad explica cómo recopilamos, usamos, divulgamos y salvaguardamos tu información cuando visitas nuestro sitio web SuscripGrupo.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <h2 className="text-xl font-semibold">Information We Collect</h2>
+          <h2 className="text-xl font-semibold">Información que Recopilamos</h2>
           <p>
-            We may collect personal identification information (Name, email address, phone number, etc.) from Users in a variety of ways, including, but not limited to, when Users visit our site, register on the site, place an order, subscribe to the newsletter, respond to a survey, fill out a form, and in connection with other activities, services, features or resources we make available on our Service.
+            Podemos recopilar información de identificación personal (Nombre, dirección de correo electrónico, número de teléfono, etc.) de los Usuarios de diversas maneras, incluyendo, pero no limitado a, cuando los Usuarios visitan nuestro sitio, se registran en el sitio, realizan un pedido, se suscriben al boletín informativo, responden a una encuesta, llenan un formulario, y en conexión con otras actividades, servicios, características o recursos que ponemos a disposición en nuestro Servicio.
           </p>
           
-          <h3 className="text-lg font-semibold">How We Use Your Information</h3>
-          <p>We may use the information we collect in the following ways:</p>
+          <h3 className="text-lg font-semibold">Cómo Usamos Tu Información</h3>
+          <p>Podemos usar la información que recopilamos de las siguientes maneras:</p>
           <ul className="list-disc pl-6 space-y-1">
-            <li>To personalize user's experience and to allow us to deliver the type of content and product offerings in which you are most interested.</li>
-            <li>To improve our website in order to better serve you.</li>
-            <li>To allow us to better service you in responding to your customer service requests.</li>
-            <li>To administer a contest, promotion, survey or other site feature.</li>
-            <li>To quickly process your transactions.</li>
-            <li>To send periodic emails regarding your order or other products and services.</li>
+            <li>Para personalizar la experiencia del usuario y permitirnos entregar el tipo de contenido y ofertas de productos en los que estás más interesado.</li>
+            <li>Para mejorar nuestro sitio web con el fin de servirte mejor.</li>
+            <li>Para permitirnos servirte mejor al responder a tus solicitudes de servicio al cliente.</li>
+            <li>Para administrar un concurso, promoción, encuesta u otra característica del sitio.</li>
+            <li>Para procesar rápidamente tus transacciones.</li>
+            <li>Para enviar correos electrónicos periódicos sobre tu pedido u otros productos y servicios.</li>
           </ul>
 
-          <h2 className="text-xl font-semibold">Sharing Your Personal Information</h2>
+          <h2 className="text-xl font-semibold">Compartir Tu Información Personal</h2>
           <p>
-            We do not sell, trade, or rent Users personal identification information to others. We may share generic aggregated demographic information not linked to any personal identification information regarding visitors and users with our business partners, trusted affiliates and advertisers for the purposes outlined above.
+            No vendemos, intercambiamos ni alquilamos la información de identificación personal de los Usuarios a otros. Podemos compartir información demográfica agregada genérica no vinculada a ninguna información de identificación personal sobre visitantes y usuarios con nuestros socios comerciales, afiliados de confianza y anunciantes para los fines descritos anteriormente.
           </p>
           
-          <h2 className="text-xl font-semibold">Contacting Us</h2>
+          <h2 className="text-xl font-semibold">Contactándonos</h2>
           <p>
-            If you have any questions about this Privacy Policy, the practices of this site, or your dealings with this site, please contact us at:
+            Si tienes alguna pregunta sobre esta Política de Privacidad, las prácticas de este sitio, o tus tratos con este sitio, por favor contáctanos en:
           </p>
           <p>
-            Firebase Subscription Hub<br />
-            [Your Company Address]<br />
-            <Link href="mailto:privacy@firebasesubscriptionhub.example.com" className="text-primary hover:underline">privacy@firebasesubscriptionhub.example.com</Link>
+            SuscripGrupo (por tecnosalud internacional)<br />
+            [Dirección de tu Compañía]<br />
+            <Link href="mailto:privacidad@suscripgrupo.example.com" className="text-primary hover:underline">privacidad@suscripgrupo.example.com</Link>
           </p>
 
-          {/* Add more placeholder sections as needed */}
           <p className="text-sm text-muted-foreground pt-4">
-            This is a placeholder Privacy Policy document. In a real application, this would contain comprehensive legal terms regarding data privacy.
+            Este es un documento de Política de Privacidad de ejemplo. En una aplicación real, contendría términos legales exhaustivos sobre la privacidad de los datos.
           </p>
 
           <div className="pt-4 text-center">
             <Button asChild variant="outline">
-              <Link href="/">Return to Homepage</Link>
+              <Link href="/">Volver a la Página Principal</Link>
             </Button>
           </div>
         </CardContent>

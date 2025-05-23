@@ -11,20 +11,20 @@ import { Briefcase, Users, DollarSign, ShieldCheck, MessageCircle, Search, Credi
 import { Icons } from '@/components/icons';
 
 export const metadata: Metadata = {
-  title: 'Firebase Subscription Hub: Comparte y Ahorra en Suscripciones',
-  description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza. Comparte tus suscripciones de forma segura.',
-  keywords: 'compartir suscripciones, dividir gastos, ahorrar suscripciones, netflix compartido, spotify familiar, hbo max grupo, disney plus compartido, youtube premium familiar, plataforma de suscripciones',
+  title: 'SuscripGrupo: Comparte y Ahorra en Suscripciones',
+  description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza. Comparte tus suscripciones de forma segura con SuscripGrupo.',
+  keywords: 'suscripgrupo, compartir suscripciones, dividir gastos, ahorrar suscripciones, netflix compartido, spotify familiar, hbo max grupo, disney plus compartido, youtube premium familiar, plataforma de suscripciones',
   openGraph: {
-    title: 'Firebase Subscription Hub: Comparte y Ahorra en Suscripciones',
-    description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza.',
-    url: 'https://your-platform-url.com/landing', // Replace with your actual URL
-    siteName: 'Firebase Subscription Hub',
+    title: 'SuscripGrupo: Comparte y Ahorra en Suscripciones',
+    description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza en SuscripGrupo.',
+    url: 'https://suscripgrupo.example.com/landing', // Replace with your actual URL
+    siteName: 'SuscripGrupo',
     images: [
       {
-        url: 'https://your-platform-url.com/og-image.png', // Replace with your actual OG image URL
+        url: 'https://suscripgrupo.example.com/og-image.png', // Replace with your actual OG image URL
         width: 1200,
         height: 630,
-        alt: 'Firebase Subscription Hub - Comparte Suscripciones',
+        alt: 'SuscripGrupo - Comparte Suscripciones',
       },
     ],
     locale: 'es_ES',
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Firebase Subscription Hub: Comparte y Ahorra en Suscripciones',
-    description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza.',
+    title: 'SuscripGrupo: Comparte y Ahorra en Suscripciones',
+    description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza en SuscripGrupo.',
     // site: '@yourtwitterhandle', // Replace with your Twitter handle if any
-    images: ['https://your-platform-url.com/twitter-image.png'], // Replace with your actual Twitter image URL
+    images: ['https://suscripgrupo.example.com/twitter-image.png'], // Replace with your actual Twitter image URL
   },
   alternates: {
-    canonical: 'https://your-platform-url.com/landing', // Replace with your actual URL
+    canonical: 'https://suscripgrupo.example.com/landing', // Replace with your actual URL
   },
   robots: {
     index: true,
@@ -56,12 +56,12 @@ export const metadata: Metadata = {
 
 const faqItems = [
   {
-    question: "¿Cómo puedo compartir mi suscripción?",
+    question: "¿Cómo puedo compartir mi suscripción en SuscripGrupo?",
     answer: "1. Publicas los detalles de tu suscripción de forma segura en nuestra plataforma. 2. Estableces el precio por cupo y el número de participantes. 3. Aceptas a los interesados y recibes el pago directamente a través de nuestro sistema seguro.",
     value: "item-1",
   },
   {
-    question: "¿Es seguro unirme a un grupo?",
+    question: "¿Es seguro unirme a un grupo en SuscripGrupo?",
     answer: "¡Sí! Priorizamos tu seguridad. Verificamos a los usuarios proveedores y tu pago está protegido. Nuestro sistema de arbitraje garantiza tu acceso durante todo el ciclo de pago o te ayudamos a resolver cualquier inconveniente.",
     value: "item-2",
   },
@@ -71,17 +71,17 @@ const faqItems = [
     value: "item-3",
   },
   {
-    question: "¿Qué tipos de suscripciones puedo compartir o encontrar?",
+    question: "¿Qué tipos de suscripciones puedo compartir o encontrar en SuscripGrupo?",
     answer: "Puedes compartir y encontrar una amplia variedad de servicios digitales, como plataformas de streaming (Netflix, HBO Max, Disney+), música (Spotify, Apple Music), software, herramientas de productividad, ¡y mucho más!",
     value: "item-4",
   }
 ];
 
 const availableSubscriptionsMock = [
-  { id: "s1", name: "Netflix Premium", type: "Cupo en Plan Familiar 4K", price: 3.99, currency: "USD", availability: "2 cupos disponibles", icon: "https://placehold.co/80x80.png/1DBF73/FFFFFF?text=N", dataAiHint: "netflix logo" },
+  { id: "s1", name: "Netflix Premium", type: "Cupo en Plan Familiar 4K", price: 3.99, currency: "USD", availability: "2 cupos disponibles", icon: "https://placehold.co/80x80.png/E50914/FFFFFF?text=N", dataAiHint: "netflix logo" },
   { id: "s2", name: "Spotify Premium", type: "Lugar en Plan Dúo", price: 2.75, currency: "USD", availability: "1 cupo disponible", icon: "https://placehold.co/80x80.png/1ED760/FFFFFF?text=S", dataAiHint: "spotify logo" },
-  { id: "s3", name: "HBO Max Standard", type: "Acceso Compartido", price: 4.50, currency: "USD", availability: "3 cupos disponibles", icon: "https://placehold.co/80x80.png/A65FF9/FFFFFF?text=H", dataAiHint: "hbo logo" },
-  { id: "s4", name: "Disney+ Anual", type: "Cupo en Plan Familiar", price: 2.00, currency: "USD", availability: "SOLD OUT", icon: "https://placehold.co/80x80.png/0F5BC2/FFFFFF?text=D", dataAiHint: "disney logo" },
+  { id: "s3", name: "HBO Max Standard", type: "Acceso Compartido", price: 4.50, currency: "USD", availability: "3 cupos disponibles", icon: "https://placehold.co/80x80.png/7E4FF6/FFFFFF?text=H", dataAiHint: "hbo logo" },
+  { id: "s4", name: "Disney+ Anual", type: "Cupo en Plan Familiar", price: 2.00, currency: "USD", availability: "SOLD OUT", icon: "https://placehold.co/80x80.png/0063E5/FFFFFF?text=D", dataAiHint: "disney logo" },
 ];
 
 const trustPillars = [
@@ -95,14 +95,18 @@ export default function LandingPage() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Firebase Subscription Hub",
-    "url": "https://your-platform-url.com", // Replace with your actual URL
-    "logo": "https://your-platform-url.com/logo.png", // Replace with your actual logo URL
+    "name": "SuscripGrupo",
+    "url": "https://suscripgrupo.example.com", // Replace with your actual URL
+    "logo": "https://suscripgrupo.example.com/logo.png", // Replace with your actual logo URL
+    "parentOrganization": { // Added parent organization
+        "@type": "Organization",
+        "name": "tecnosalud internacional"
+    },
     "contactPoint": {
       "@type": "ContactPoint",
       "telephone": "+1-XXX-XXX-XXXX", // Optional
       "contactType": "Customer Support",
-      "email": "soporte@firebasesubscriptionhub.example.com"
+      "email": "soporte@suscripgrupo.example.com"
     },
     "sameAs": [ // Optional: social media links
       // "https://www.facebook.com/yourplatform",
@@ -114,11 +118,11 @@ export default function LandingPage() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "name": "Firebase Subscription Hub",
-    "url": "https://your-platform-url.com/landing", // Replace with your actual URL
+    "name": "SuscripGrupo",
+    "url": "https://suscripgrupo.example.com/landing", // Replace with your actual URL
     "potentialAction": {
       "@type": "SearchAction",
-      "target": "https://your-platform-url.com/browse-groups?q={search_term_string}", // Replace
+      "target": "https://suscripgrupo.example.com/browse-groups?q={search_term_string}", // Replace
       "query-input": "required name=search_term_string"
     }
   };
@@ -129,14 +133,14 @@ export default function LandingPage() {
     "serviceType": "Plataforma de intermediación para compartir suscripciones",
     "provider": {
       "@type": "Organization",
-      "name": "Firebase Subscription Hub"
+      "name": "SuscripGrupo"
     },
     "areaServed": {
       "@type": "Country",
       "name": "Global" // Or specify countries
     },
-    "description": "Conecta con personas para compartir gastos de suscripciones a servicios digitales como Netflix, Spotify, y más, de forma segura y económica.",
-    "name": "Compartir Suscripciones Digitales"
+    "description": "Conecta con personas para compartir gastos de suscripciones a servicios digitales como Netflix, Spotify, y más, de forma segura y económica en SuscripGrupo.",
+    "name": "Compartir Suscripciones Digitales en SuscripGrupo"
   };
 
   const faqPageSchema = {
@@ -155,8 +159,8 @@ export default function LandingPage() {
   const productSchemaExample = availableSubscriptionsMock.slice(0, 2).map(sub => ({
     "@context": "https://schema.org",
     "@type": "Product",
-    "name": `${sub.name} - ${sub.type}`,
-    "description": `Acceso compartido para ${sub.name}. ${sub.availability}.`,
+    "name": `${sub.name} - ${sub.type} (Cupo en SuscripGrupo)`,
+    "description": `Acceso compartido para ${sub.name}. ${sub.availability}. Ofrecido en SuscripGrupo.`,
     "image": sub.icon,
     "brand": {
       "@type": "Brand",
@@ -169,12 +173,12 @@ export default function LandingPage() {
       "availability": sub.availability.toLowerCase().includes("sold out") ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
       "seller": {
         "@type": "Organization",
-        "name": "Firebase Subscription Hub (Plataforma Intermediaria)"
+        "name": "SuscripGrupo (Plataforma Intermediaria)"
       }
     },
     "mainEntityOfPage": { // Optional, but good for linking back
         "@type": "WebPage",
-        "@id": `https://your-platform-url.com/browse-groups/${sub.id}` // Replace with actual group URL
+        "@id": `https://suscripgrupo.example.com/browse-groups/${sub.id}` // Replace with actual group URL
     }
   }));
 
@@ -192,18 +196,18 @@ export default function LandingPage() {
         ))}
       </Head>
 
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-200 via-blue-100 to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-300 via-blue-200 to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Hero Section */}
-        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/41a7fc/FFFFFF?text=Tech+Background')" }} data-ai-hint="digital services collage abstract">
-          <div className="container mx-auto px-4 bg-black/40 dark:bg-black/60 py-10 rounded-xl backdrop-blur-md">
+        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/41a7fc/FFFFFF?text=Servicios+Digitales')" }} data-ai-hint="digital services collage abstract">
+          <div className="container mx-auto px-4 bg-black/40 dark:bg-black/60 py-10 rounded-xl backdrop-blur-sm">
             <Link href="/" className="inline-block mx-auto mb-6">
               <Icons.Logo className="h-20 w-20 text-primary transition-transform duration-300 hover:scale-110" />
             </Link>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight">
-              Plataforma para Compartir Suscripciones y <span className="text-primary">Dividir Gastos</span> de Forma Segura
+              SuscripGrupo: Plataforma para Compartir Suscripciones y <span className="text-primary">Dividir Gastos</span> de Forma Segura
             </h1>
             <p className="text-lg md:text-xl text-slate-100 dark:text-slate-200 mb-10 max-w-3xl mx-auto">
-              Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza y gestionando tus grupos de forma sencilla.
+              Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza y gestionando tus grupos de forma sencilla en SuscripGrupo.
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform duration-300">
@@ -224,7 +228,7 @@ export default function LandingPage() {
         <section id="how-it-works" className="py-16 md:py-24 bg-background dark:bg-slate-900">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">¿Cómo Funciona?</h2>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">¿Cómo Funciona SuscripGrupo?</h2>
               <p className="text-lg text-muted-foreground mt-2">Compartir y unirse a grupos es simple y seguro.</p>
             </div>
             <Accordion type="single" collapsible className="w-full max-w-3xl mx-auto bg-card p-6 rounded-xl shadow-xl">
@@ -244,7 +248,7 @@ export default function LandingPage() {
         <section id="available-subscriptions" className="py-16 md:py-24 bg-slate-50 dark:bg-slate-800/50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Suscripciones Populares</h2>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Suscripciones Populares en SuscripGrupo</h2>
               <p className="text-lg text-muted-foreground mt-2">Descubre algunos de los servicios que puedes compartir o unirte.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -286,7 +290,7 @@ export default function LandingPage() {
              <div className="text-center mt-12">
                 <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
                     <Link href="/browse-groups">
-                        <Search className="mr-2" /> Ver Todos los Grupos
+                        <Search className="mr-2" /> Ver Todos los Grupos en SuscripGrupo
                     </Link>
                 </Button>
             </div>
@@ -297,7 +301,7 @@ export default function LandingPage() {
         <section id="trust-pillars" className="py-16 md:py-24 bg-background dark:bg-slate-900">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Tu Confianza es Nuestra Prioridad</h2>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Tu Confianza es Nuestra Prioridad en SuscripGrupo</h2>
               <p className="text-lg text-muted-foreground mt-2">Construimos una plataforma segura y fiable para ti.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -314,11 +318,11 @@ export default function LandingPage() {
               ))}
             </div>
              <div className="mt-12 text-center border-t pt-8">
-                <h3 className="text-2xl font-semibold text-foreground mb-3">¿Listo para Empezar?</h3>
+                <h3 className="text-2xl font-semibold text-foreground mb-3">¿Listo para Empezar con SuscripGrupo?</h3>
                 <p className="text-muted-foreground mb-6 max-w-xl mx-auto">Únete a miles de usuarios que ya están ahorrando y compartiendo sus suscripciones favoritas de manera inteligente.</p>
                 <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform duration-300">
                     <Link href="/login">
-                        <Zap className="mr-2" /> ¡Crear Cuenta Ahora!
+                        <Zap className="mr-2" /> ¡Crear Cuenta Ahora en SuscripGrupo!
                     </Link>
                 </Button>
             </div>
@@ -329,16 +333,16 @@ export default function LandingPage() {
             <div className="container mx-auto px-4 text-center">
                 <Card className="max-w-3xl mx-auto p-8 shadow-xl rounded-lg">
                     <Icons.Logo className="h-16 w-16 text-primary mx-auto mb-6" />
-                    <h2 className="text-3xl font-bold text-foreground mb-4">Sobre Nosotros</h2>
+                    <h2 className="text-3xl font-bold text-foreground mb-4">Sobre SuscripGrupo</h2>
                     <p className="text-muted-foreground mb-6 leading-relaxed">
-                        En <span className="font-semibold text-primary">Firebase Subscription Hub</span>, nuestra misión es hacer que el acceso a tus servicios digitales favoritos sea más asequible y colaborativo. Creemos en el poder de compartir para desbloquear un mayor valor para todos. Facilitamos conexiones seguras para que puedas disfrutar más, gastando menos.
+                        En <span className="font-semibold text-primary">SuscripGrupo</span>, nuestra misión es hacer que el acceso a tus servicios digitales favoritos sea más asequible y colaborativo. Creemos en el poder de compartir para desbloquear un mayor valor para todos. Facilitamos conexiones seguras para que puedas disfrutar más, gastando menos. SuscripGrupo es una plataforma de <span className="font-semibold">tecnosalud internacional</span>.
                     </p>
                     <h3 className="text-2xl font-semibold text-foreground mb-3">Contáctanos</h3>
                     <p className="text-muted-foreground">
                         ¿Preguntas? ¿Sugerencias? Estamos aquí para ayudar.
                     </p>
                     <p className="text-muted-foreground mt-1">
-                        Email: <a href="mailto:soporte@firebasesubscriptionhub.example.com" className="text-primary hover:underline">soporte@firebasesubscriptionhub.example.com</a>
+                        Email: <a href="mailto:soporte@suscripgrupo.example.com" className="text-primary hover:underline">soporte@suscripgrupo.example.com</a>
                     </p>
                     {/* <p className="text-muted-foreground mt-1">Dirección: 123 Calle Ficticia, Ciudad, País (Si aplica)</p> */}
                 </Card>
@@ -348,5 +352,3 @@ export default function LandingPage() {
     </>
   );
 }
-
-    

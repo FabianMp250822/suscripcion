@@ -33,8 +33,8 @@ export default function LoginPage() {
 
     if (!isLogin && !canSubmitSignUp) {
         toast({
-            title: "Consent Required",
-            description: "You must agree to the Terms of Service and Privacy Policy to sign up.",
+            title: "Consentimiento Requerido",
+            description: "Debes aceptar los Términos de Servicio y la Política de Privacidad para registrarte.",
             variant: "destructive",
         });
         setLoading(false);
@@ -44,7 +44,7 @@ export default function LoginPage() {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: "Login Successful", description: "Welcome back!" });
+        toast({ title: "Inicio de Sesión Exitoso", description: "¡Bienvenido de nuevo!" });
         router.push("/");
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -63,39 +63,39 @@ export default function LoginPage() {
                 photoURL: newUser.photoURL,
                 roles: userRoles,
                 createdAt: serverTimestamp(),
-                // Placeholder for other user preferences or data
             });
         }
-        toast({ title: "Sign Up Successful", description: "Your account has been created. Please log in." });
-        setIsLogin(true); // Switch to login view after successful sign-up
-        // Clear fields for login
-        // setEmail("");
-        // setPassword("");
+        toast({ title: "Registro Exitoso", description: "Tu cuenta ha sido creada. Por favor, inicia sesión." });
+        setIsLogin(true); 
         setAgreeToTerms(false);
         setAgreeToPrivacy(false);
       }
     } catch (error: any) {
-      console.error("Authentication error:", error.code, error.message);
-      let toastTitle = isLogin ? "Login Failed" : "Sign Up Failed";
-      let toastDescription = "An unexpected error occurred. Please try again.";
+      console.error("Error de autenticación:", error.code, error.message);
+      let toastTitle = isLogin ? "Fallo de Inicio de Sesión" : "Fallo de Registro";
+      let toastDescription = "Ocurrió un error inesperado. Por favor, inténtalo de nuevo.";
 
       if (error.code) {
         switch (error.code) {
           case 'auth/invalid-credential':
-          case 'auth/user-not-found': // Consolidate for login
-          case 'auth/wrong-password': // Consolidate for login
             toastDescription = isLogin ?
-              "Incorrect email or password. If you don't have an account, please click 'Sign Up' below." :
-              "Could not process your request. Please check the details and try again.";
+              "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo." :
+              "No se pudo procesar tu solicitud. Por favor, verifica los detalles e inténtalo de nuevo.";
+            break;
+          case 'auth/user-not-found': 
+             toastDescription = "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo.";
+            break;
+          case 'auth/wrong-password': 
+             toastDescription = "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo.";
             break;
           case 'auth/email-already-in-use':
-            toastDescription = "This email address is already registered. Please try logging in.";
+            toastDescription = "Esta dirección de correo ya está registrada. Por favor, intenta iniciar sesión.";
             break;
           case 'auth/weak-password':
-            toastDescription = "The password is too weak. It must be at least 6 characters long.";
+            toastDescription = "La contraseña es demasiado débil. Debe tener al menos 6 caracteres.";
             break;
           case 'auth/invalid-email':
-            toastDescription = "The email address is not valid. Please check and try again.";
+            toastDescription = "La dirección de correo no es válida. Por favor, verifica e inténtalo de nuevo.";
             break;
           default:
             toastDescription = error.message || toastDescription;
@@ -127,29 +127,29 @@ export default function LoginPage() {
         if (!userDocSnap.exists()) {
           // New user via Google
           let userRoles = ['subscriber', 'sharer'];
-          if (user.email && user.email.includes('admin')) { // Simplified admin role assignment
+          if (user.email && user.email.includes('admin')) { 
             userRoles = ['admin'];
           }
           await setDoc(userDocRef, {
             uid: user.uid,
             email: user.email,
-            displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'User'),
+            displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Usuario'),
             photoURL: user.photoURL,
             roles: userRoles,
             createdAt: serverTimestamp(),
           });
-          toast({ title: "Sign Up Successful", description: "Welcome! Your account has been created." });
+          toast({ title: "Registro Exitoso", description: "¡Bienvenido! Tu cuenta ha sido creada." });
         } else {
           // Existing user
-          toast({ title: "Login Successful", description: "Welcome back!" });
+          toast({ title: "Inicio de Sesión Exitoso", description: "¡Bienvenido de nuevo!" });
         }
         router.push("/");
       }
     } catch (error: any) {
-      console.error("Google Sign-In error:", error.code, error.message);
+      console.error("Error de inicio de sesión con Google:", error.code, error.message);
       toast({
-        title: "Google Sign-In Failed",
-        description: error.message || "Could not sign in with Google.",
+        title: "Fallo de Inicio de Sesión con Google",
+        description: error.message || "No se pudo iniciar sesión con Google.",
         variant: "destructive",
       });
     } finally {
@@ -164,17 +164,17 @@ export default function LoginPage() {
           <Link href="/" className="inline-block mx-auto mb-4">
             <Icons.Logo className="h-16 w-16 text-primary" />
           </Link>
-          <CardTitle className="text-3xl font-bold">{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
-          <CardDescription>{isLogin ? "Sign in to access your dashboard." : "Sign up to get started with Firebase Subscription Hub."}</CardDescription>
+          <CardTitle className="text-3xl font-bold">{isLogin ? "Bienvenido de Nuevo" : "Crear Cuenta"}</CardTitle>
+          <CardDescription>{isLogin ? "Inicia sesión para acceder a tu panel." : "Regístrate para empezar con SuscripGrupo."}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Correo Electrónico</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="tu@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -182,7 +182,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
@@ -207,9 +207,9 @@ export default function LoginPage() {
                       htmlFor="terms"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      I accept the{" "}
+                      Acepto los{" "}
                       <Link href="/terms-of-service" target="_blank" className="underline text-primary hover:text-primary/80">
-                        Terms of Service
+                        Términos de Servicio
                       </Link>
                     </label>
                   </div>
@@ -225,9 +225,9 @@ export default function LoginPage() {
                       htmlFor="privacy"
                       className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      I accept the{" "}
+                      Acepto la{" "}
                       <Link href="/privacy-policy" target="_blank" className="underline text-primary hover:text-primary/80">
-                        Privacy Policy
+                        Política de Privacidad
                       </Link>
                     </label>
                   </div>
@@ -241,7 +241,7 @@ export default function LoginPage() {
                 disabled={loading || (!isLogin && !canSubmitSignUp)}
             >
               {loading && <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />}
-              {isLogin ? "Sign In" : "Sign Up"}
+              {isLogin ? "Iniciar Sesión" : "Regístrate"}
             </Button>
           </form>
           <div className="mt-6 relative">
@@ -250,7 +250,7 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
               <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
+                O continuar con
               </span>
             </div>
           </div>
@@ -262,7 +262,7 @@ export default function LoginPage() {
         </CardContent>
         <CardFooter className="flex justify-center">
           <Button variant="link" onClick={() => setIsLogin(!isLogin)} className="text-sm">
-            {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+            {isLogin ? "¿No tienes cuenta? Regístrate" : "¿Ya tienes cuenta? Inicia Sesión"}
           </Button>
         </CardFooter>
       </Card>
