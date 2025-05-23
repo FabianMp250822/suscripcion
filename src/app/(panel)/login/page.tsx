@@ -4,7 +4,8 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
+import { auth, db } from "@/lib/firebase/config"; // Added db
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"; // Added Firestore functions
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(true); // To toggle between Login and Sign Up
+  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -27,11 +28,27 @@ export default function LoginPage() {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Login Successful", description: "Welcome back!" });
-        router.push("/"); // Redirect to home, which will handle role-based redirection
+        router.push("/");
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-        toast({ title: "Sign Up Successful", description: "Welcome! Please log in." });
-        setIsLogin(true); // Switch to login form after sign up
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const newUser = userCredential.user;
+        if (newUser) {
+            const userDocRef = doc(db, "users", newUser.uid);
+            let userRoles = ['subscriber', 'sharer'];
+            if (email.includes('admin')) {
+                userRoles = ['admin'];
+            }
+            await setDoc(userDocRef, {
+                uid: newUser.uid,
+                email: newUser.email,
+                displayName: newUser.displayName || email.split('@')[0],
+                photoURL: newUser.photoURL,
+                roles: userRoles,
+                createdAt: serverTimestamp(),
+            });
+        }
+        toast({ title: "Sign Up Successful", description: "Your account has been created. Please log in." });
+        setIsLogin(true);
       }
     } catch (error: any) {
       console.error("Authentication error:", error.code, error.message);
@@ -45,18 +62,17 @@ export default function LoginPage() {
               "Incorrect email or password. If you don't have an account, please click 'Sign Up' below." :
               "Could not process your request. Please check the details and try again.";
             break;
-          case 'auth/user-not-found': // Often masked by invalid-credential
+          case 'auth/user-not-found':
             toastTitle = "Login Failed";
             toastDescription = "No account found with this email. Please 'Sign Up' or check the email address.";
             break;
-          case 'auth/wrong-password': // Often masked by invalid-credential
+          case 'auth/wrong-password':
             toastTitle = "Login Failed";
             toastDescription = "Incorrect password. Please try again.";
             break;
           case 'auth/email-already-in-use':
             toastTitle = "Sign Up Failed";
             toastDescription = "This email address is already registered. Please try logging in.";
-            // setIsLogin(true); // Optionally switch to login form
             break;
           case 'auth/weak-password':
             toastTitle = "Sign Up Failed";
@@ -86,9 +102,33 @@ export default function LoginPage() {
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      toast({ title: "Login Successful", description: "Welcome!" });
-      router.push("/");
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (!userDocSnap.exists()) {
+          // New user via Google
+          let userRoles = ['subscriber', 'sharer'];
+          if (user.email && user.email.includes('admin')) {
+            userRoles = ['admin'];
+          }
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'User'),
+            photoURL: user.photoURL,
+            roles: userRoles,
+            createdAt: serverTimestamp(),
+          });
+          toast({ title: "Sign Up Successful", description: "Welcome! Your account has been created." });
+        } else {
+          // Existing user
+          toast({ title: "Login Successful", description: "Welcome back!" });
+        }
+        router.push("/");
+      }
     } catch (error: any) {
       console.error("Google Sign-In error:", error.code, error.message);
       toast({
