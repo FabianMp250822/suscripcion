@@ -25,7 +25,7 @@ type PaymentStatus = "Pagado" | "Pendiente" | "Fallido" | "En Disputa" | "Verifi
 
 interface Transaction {
   id: string;
-  fecha: string; // Date
+  fecha: string; 
   pagadorId?: string;
   pagadorNombre: string;
   pagadorEmail: string;
@@ -37,12 +37,12 @@ interface Transaction {
   listingId?: string;
   servicioNombre: string;
   servicioIcono: string;
-  montoPagadoPorPagador: number; // Amount paid by Payer
-  gananciaPlataforma: number;    // Platform Fee
-  montoParaPropietario: number; // Sharer Payout Amount
+  montoPagadoPorPagador: number; 
+  gananciaPlataforma: number;    
+  montoParaPropietario: number; 
   estado: PaymentStatus;
   metodoPago: string;
-  comprobanteUrl?: string; // Optional URL for payment proof
+  comprobanteUrl?: string; 
 }
 
 // No mock data, initialize as empty. Data will come from Firestore.
@@ -61,18 +61,17 @@ const getStatusBadgeVariant = (status: PaymentStatus) => {
 };
 
 const allPaymentStatuses: PaymentStatus[] = ["Pagado", "Pendiente", "Fallido", "En Disputa", "Verificado", "Reembolsado"];
-const exampleServices = ["Netflix Premium", "Spotify Duo", "HBO Max", "Disney+", "YouTube Premium"]; // For filter dropdown example
 
 const chartConfig = {
   platformEarnings: { label: "Ganancias Plataforma (€)", color: "hsl(var(--chart-1))" },
   totalVolume: { label: "Volumen Total (€)", color: "hsl(var(--chart-2))" },
 };
-// Placeholder chart data
-const exampleChartData = [
-    { month: "Ene", platformEarnings: 150, totalVolume: 1000 },
-    { month: "Feb", platformEarnings: 200, totalVolume: 1200 },
-    { month: "Mar", platformEarnings: 180, totalVolume: 1100 },
-];
+
+interface MonthlyChartData {
+  month: string;
+  platformEarnings: number;
+  totalVolume: number;
+}
 
 export default function PaymentTransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
@@ -89,6 +88,10 @@ export default function PaymentTransactionsPage() {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [newStatusToSet, setNewStatusToSet] = useState<PaymentStatus | "">("");
   const { toast } = useToast();
+  
+  const [platformChartData, setPlatformChartData] = useState<MonthlyChartData[]>([]);
+  const [serviceFilterOptions, setServiceFilterOptions] = useState<string[]>([]);
+  const [totalPlatformEarnings, setTotalPlatformEarnings] = useState<number>(0);
 
   useEffect(() => {
     // TODO: Implementar carga de transacciones desde Firestore
@@ -100,6 +103,8 @@ export default function PaymentTransactionsPage() {
     //     fetchedTransactions.push({ id: doc.id, ...doc.data() } as Transaction);
     //   });
     //   setTransactions(fetchedTransactions);
+    //   // TODO: Procesar fetchedTransactions para calcular platformChartData y totalPlatformEarnings
+    //   // TODO: Extraer nombres únicos de servicios para serviceFilterOptions
     //   setLoading(false);
     // }, (error) => {
     //   console.error("Error fetching transactions: ", error);
@@ -107,6 +112,10 @@ export default function PaymentTransactionsPage() {
     //   setLoading(false);
     // });
     // return () => unsubscribe();
+    setTransactions([]); // Initialize with empty array
+    setPlatformChartData([]); // Initialize with empty array
+    setServiceFilterOptions([]); // Initialize with empty array
+    setTotalPlatformEarnings(0); // Initialize with 0
     setLoading(false); // Remove this line once Firestore fetching is implemented
   }, [toast]);
 
@@ -183,7 +192,8 @@ export default function PaymentTransactionsPage() {
               <SelectTrigger><SelectValue placeholder="Filtrar por Servicio" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los Servicios</SelectItem>
-                {exampleServices.map(service => <SelectItem key={service} value={service}>{service}</SelectItem>)}
+                {serviceFilterOptions.map(service => <SelectItem key={service} value={service}>{service}</SelectItem>)}
+                 {serviceFilterOptions.length === 0 && <SelectItem value="loading" disabled>Cargando servicios...</SelectItem>}
               </SelectContent>
             </Select>
           </div>
@@ -233,28 +243,36 @@ export default function PaymentTransactionsPage() {
           <CardContent className="grid gap-6 md:grid-cols-2">
             <div className="flex flex-col justify-center space-y-2 p-4 border rounded-lg bg-muted/50">
                 <Label className="text-sm font-medium text-muted-foreground">Ganancias Totales de la Plataforma</Label>
-                {/* TODO: Fetch real total platform earnings */}
-                <div className="text-3xl font-bold">$0.00</div> 
+                <div className="text-3xl font-bold">${totalPlatformEarnings.toFixed(2)}</div> 
                 <p className="text-xs text-muted-foreground">Calculado de todas las transacciones completadas.</p>
             </div>
              <div className="h-[250px] p-4 border rounded-lg">
-                <ResponsiveContainer width="100%" height="100%">
-                    {/* TODO: Replace with real chart data and configuration */}
-                    <RechartsBarChart data={exampleChartData}>
-                        <XAxis dataKey="month" stroke="hsl(var(--foreground))" fontSize={12} />
-                        <YAxis stroke="hsl(var(--foreground))" fontSize={12} />
-                        <RechartsTooltip 
-                            contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)'}} 
-                            labelStyle={{ color: 'hsl(var(--foreground))' }}
-                            itemStyle={{ color: 'hsl(var(--foreground))' }}
-                            formatter={(value, name) => [`$${(value as number).toFixed(2)}`, chartConfig[name as keyof typeof chartConfig]?.label || name]}
-                        />
-                        <RechartsLegend formatter={(value) => chartConfig[value as keyof typeof chartConfig]?.label || value} />
-                        <Bar dataKey="platformEarnings" fill="var(--color-platformEarnings)" radius={[4, 4, 0, 0]} name="platformEarnings" />
-                        <Bar dataKey="totalVolume" fill="var(--color-totalVolume)" radius={[4, 4, 0, 0]} name="totalVolume" />
-                    </RechartsBarChart>
-                </ResponsiveContainer>
-                <p className="text-center text-sm text-muted-foreground mt-2">Gráfico de ganancias mensuales (datos de ejemplo).</p>
+                {loading ? (
+                    <div className="flex justify-center items-center h-full">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="ml-2 text-muted-foreground">Cargando gráfico...</p>
+                    </div>
+                ) : platformChartData.length === 0 ? (
+                    <div className="flex justify-center items-center h-full">
+                        <p className="text-muted-foreground">No hay datos para mostrar en el gráfico.</p>
+                    </div>
+                ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <RechartsBarChart data={platformChartData}>
+                            <XAxis dataKey="month" stroke="hsl(var(--foreground))" fontSize={12} />
+                            <YAxis stroke="hsl(var(--foreground))" fontSize={12} />
+                            <RechartsTooltip 
+                                contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: 'var(--radius)'}} 
+                                labelStyle={{ color: 'hsl(var(--foreground))' }}
+                                itemStyle={{ color: 'hsl(var(--foreground))' }}
+                                formatter={(value, name) => [`$${(value as number).toFixed(2)}`, chartConfig[name as keyof typeof chartConfig]?.label || name]}
+                            />
+                            <RechartsLegend formatter={(value) => chartConfig[value as keyof typeof chartConfig]?.label || value} />
+                            <Bar dataKey="platformEarnings" fill="var(--color-platformEarnings)" radius={[4, 4, 0, 0]} name="platformEarnings" />
+                            <Bar dataKey="totalVolume" fill="var(--color-totalVolume)" radius={[4, 4, 0, 0]} name="totalVolume" />
+                        </RechartsBarChart>
+                    </ResponsiveContainer>
+                )}
              </div>
           </CardContent>
       </Card>
@@ -294,10 +312,10 @@ export default function PaymentTransactionsPage() {
                 {filteredTransactions.map((tx) => (
                   <TableRow key={tx.id}>
                     <TableCell className="font-mono text-xs">{tx.id}</TableCell>
-                    <TableCell>{tx.fecha}</TableCell>
+                    <TableCell>{format(new Date(tx.fecha), "dd/MM/yyyy")}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Image src={tx.pagadorAvatar} alt={tx.pagadorNombre} width={24} height={24} className="rounded-full" data-ai-hint="profile avatar" />
+                        <Image src={tx.pagadorAvatar || "https://placehold.co/40x40.png"} alt={tx.pagadorNombre} width={24} height={24} className="rounded-full" data-ai-hint="profile avatar" />
                         <div>
                             <div className="font-medium">{tx.pagadorNombre}</div>
                             <div className="text-xs text-muted-foreground">{tx.pagadorEmail}</div>
@@ -306,7 +324,7 @@ export default function PaymentTransactionsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Image src={tx.beneficiarioAvatar} alt={tx.beneficiarioNombre} width={24} height={24} className="rounded-full" data-ai-hint="profile avatar" />
+                        <Image src={tx.beneficiarioAvatar || "https://placehold.co/40x40.png"} alt={tx.beneficiarioNombre} width={24} height={24} className="rounded-full" data-ai-hint="profile avatar" />
                         <div>
                             <div className="font-medium">{tx.beneficiarioNombre}</div>
                             <div className="text-xs text-muted-foreground">{tx.beneficiarioEmail}</div>
@@ -315,7 +333,7 @@ export default function PaymentTransactionsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                          <Image src={tx.servicioIcono} alt={tx.servicioNombre} width={24} height={24} className="rounded-sm" data-ai-hint="app logo" />
+                          <Image src={tx.servicioIcono || "https://placehold.co/40x40.png"} alt={tx.servicioNombre} width={24} height={24} className="rounded-sm" data-ai-hint="app logo" />
                           {tx.servicioNombre}
                       </div>
                     </TableCell>
@@ -373,17 +391,17 @@ export default function PaymentTransactionsPage() {
               <div className="grid grid-cols-[150px_1fr] items-center gap-x-4 gap-y-2">
                 <Label className="text-right font-semibold">Pagador:</Label>
                 <div className="flex items-center gap-2">
-                    <Image src={selectedTransaction.pagadorAvatar} alt={selectedTransaction.pagadorNombre} width={32} height={32} className="rounded-full" data-ai-hint="profile avatar"/>
+                    <Image src={selectedTransaction.pagadorAvatar || "https://placehold.co/40x40.png"} alt={selectedTransaction.pagadorNombre} width={32} height={32} className="rounded-full" data-ai-hint="profile avatar"/>
                     <span>{selectedTransaction.pagadorNombre} ({selectedTransaction.pagadorEmail})</span>
                 </div>
                 <Label className="text-right font-semibold">Beneficiario (Propietario):</Label>
                  <div className="flex items-center gap-2">
-                    <Image src={selectedTransaction.beneficiarioAvatar} alt={selectedTransaction.beneficiarioNombre} width={32} height={32} className="rounded-full" data-ai-hint="profile avatar"/>
+                    <Image src={selectedTransaction.beneficiarioAvatar || "https://placehold.co/40x40.png"} alt={selectedTransaction.beneficiarioNombre} width={32} height={32} className="rounded-full" data-ai-hint="profile avatar"/>
                     <span>{selectedTransaction.beneficiarioNombre} ({selectedTransaction.beneficiarioEmail})</span>
                 </div>
                 <Label className="text-right font-semibold">Servicio:</Label>
                 <div className="flex items-center gap-2">
-                    <Image src={selectedTransaction.servicioIcono} alt={selectedTransaction.servicioNombre} width={32} height={32} className="rounded-sm" data-ai-hint="app logo"/>
+                    <Image src={selectedTransaction.servicioIcono || "https://placehold.co/40x40.png"} alt={selectedTransaction.servicioNombre} width={32} height={32} className="rounded-sm" data-ai-hint="app logo"/>
                     <span>{selectedTransaction.servicioNombre}</span>
                 </div>
                 <Label className="text-right font-semibold">Monto Pagado (Pagador):</Label>
@@ -396,7 +414,7 @@ export default function PaymentTransactionsPage() {
                 <span className="font-semibold text-green-600">${selectedTransaction.gananciaPlataforma.toFixed(2)}</span>
 
                 <Label className="text-right font-semibold">Fecha:</Label>
-                <span>{selectedTransaction.fecha}</span>
+                <span>{format(new Date(selectedTransaction.fecha), "dd/MM/yyyy HH:mm")}</span>
                 <Label className="text-right font-semibold">Estado:</Label>
                 <Badge className={getStatusBadgeVariant(selectedTransaction.estado)}>{selectedTransaction.estado}</Badge>
                 <Label className="text-right font-semibold">Método de Pago:</Label>
@@ -453,5 +471,3 @@ export default function PaymentTransactionsPage() {
     </div>
   );
 }
-
-    
