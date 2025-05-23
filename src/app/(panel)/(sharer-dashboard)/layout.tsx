@@ -27,7 +27,7 @@ export default function SharerDashboardLayout({ children }: { children: ReactNod
   if (!isSharer) {
      return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-        <Icons.Share2 className="h-16 w-16 text-destructive mb-4" />
+        <Icons.SharedGroups className="h-16 w-16 text-destructive mb-4" />
         <h1 className="text-2xl font-semibold text-destructive">Access Denied</h1>
         <p className="text-muted-foreground mt-2">You do not have permission to view this sharer page.</p>
       </div>
