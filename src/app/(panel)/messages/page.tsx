@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShieldAlert, MessageSquare as MessageSquareIcon, Loader2, Send } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MessageSquare as MessageSquareIcon, Loader2, Send } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase/config";
 import {
@@ -35,7 +34,7 @@ interface ConversationParticipant {
 interface Conversation {
   id: string;
   participantIds: string[];
-  participants: { [key: string]: ConversationParticipant };
+  participants: { [key: string]: ConversationParticipant }; // Map of participant UID to their details
   lastMessage?: string;
   lastMessageTimestamp?: Timestamp;
   unreadCount?: number; // Future enhancement
@@ -73,6 +72,7 @@ export default function MessagesPage() {
       return;
     }
     setLoadingConversations(true);
+    console.log("Fetching conversations for user:", user.uid);
     const conversationsRef = collection(db, "conversations");
     const q = query(
       conversationsRef,
@@ -85,9 +85,11 @@ export default function MessagesPage() {
       querySnapshot.forEach((doc) => {
         fetchedConversations.push({ id: doc.id, ...doc.data() } as Conversation);
       });
+      console.log("Fetched conversations:", fetchedConversations);
       setConversations(fetchedConversations);
       if (fetchedConversations.length > 0 && !selectedConversationId) {
-        // setSelectedConversationId(fetchedConversations[0].id); // Optionally auto-select first convo
+        // Optionally auto-select first convo, or handle no selection state
+        // setSelectedConversationId(fetchedConversations[0].id); 
       }
       setLoadingConversations(false);
     }, (error) => {
@@ -96,7 +98,7 @@ export default function MessagesPage() {
     });
 
     return () => unsubscribe();
-  }, [user, selectedConversationId]);
+  }, [user, selectedConversationId]); // Removed selectedConversationId from deps, usually not needed for fetching conversation list
 
   // Fetch messages for the selected conversation
   useEffect(() => {
@@ -105,6 +107,7 @@ export default function MessagesPage() {
       return;
     }
     setLoadingMessages(true);
+    console.log("Fetching messages for conversation:", selectedConversationId);
     const messagesRef = collection(db, `conversations/${selectedConversationId}/messages`);
     const q = query(messagesRef, orderBy("timestamp", "asc"));
 
@@ -113,6 +116,7 @@ export default function MessagesPage() {
       querySnapshot.forEach((doc) => {
         fetchedMessages.push({ id: doc.id, conversationId: selectedConversationId, ...doc.data() } as Message);
       });
+      console.log("Fetched messages:", fetchedMessages);
       setMessages(fetchedMessages);
       setLoadingMessages(false);
     }, (error) => {
@@ -133,7 +137,7 @@ export default function MessagesPage() {
     try {
       const messageData = {
         senderId: user.uid,
-        text: currentMessageText, // This would be ciphertext
+        text: currentMessageText, // This is plain text. E2EE would encrypt this.
         timestamp: serverTimestamp(),
       };
       await addDoc(collection(db, `conversations/${selectedConversationId}/messages`), messageData);
@@ -141,14 +145,11 @@ export default function MessagesPage() {
       await updateDoc(doc(db, "conversations", selectedConversationId), {
         lastMessage: currentMessageText.length > 50 ? currentMessageText.substring(0,47) + "..." : currentMessageText,
         lastMessageTimestamp: serverTimestamp(),
-        // Optionally, update unread counts for the other participant here
       });
       
-      // No optimistic update needed for messages or conversations list if onSnapshot is working correctly
     } catch (error) {
       console.error("Error sending message: ", error);
-      // Potentially show a toast to the user and restore newMessage if send failed
-      setNewMessage(currentMessageText);
+      setNewMessage(currentMessageText); // Restore message if send failed
     }
   };
   
@@ -161,14 +162,15 @@ export default function MessagesPage() {
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
   const otherParticipantDetailsInSelectedConvo = selectedConversation ? getOtherParticipantDetails(selectedConversation) : null;
 
-  if (loadingConversations && conversations.length === 0) { // Show initial loading for conversations
+  if (loadingConversations && conversations.length === 0 && !user) { 
     return (
       <div className="flex flex-col items-center justify-center h-full p-8">
-        <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
-        <p className="text-muted-foreground">Cargando conversaciones...</p>
+        <MessageSquareIcon className="h-10 w-10 text-muted-foreground mb-3" />
+        <p className="text-muted-foreground">Please log in to view messages.</p>
       </div>
     );
   }
+
 
   return (
     <div className="flex flex-col h-[calc(100vh-var(--header-height,100px)-2rem)] md:h-[calc(100vh-var(--header-height,60px)-4rem)]">
@@ -176,14 +178,6 @@ export default function MessagesPage() {
         <h1 className="text-3xl font-bold tracking-tight">Mensajes</h1>
         <p className="text-muted-foreground">Comunícate directamente con otros usuarios y miembros de tus grupos. Pagos vía Stripe.</p>
       </div>
-
-      <Alert variant="destructive" className="mb-6">
-        <ShieldAlert className="h-5 w-5" />
-        <AlertTitle className="font-semibold">Importante: Seguridad del Chat</AlertTitle>
-        <AlertDescription>
-          This chat interface is a <strong>demonstration only</strong>. True End-to-End Encryption (E2EE) requires complex client-side cryptographic implementations (like key generation, secure private key storage, encryption/decryption). <strong>Messages sent here are NOT currently encrypted and are visible in plain text in this mock setup.</strong> Do not share sensitive information.
-        </AlertDescription>
-      </Alert>
 
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 min-h-0">
         <Card className="shadow-lg md:col-span-1 flex flex-col">
@@ -204,7 +198,7 @@ export default function MessagesPage() {
                 )}
                 {conversations.map(conv => {
                   const otherP = getOtherParticipantDetails(conv);
-                  if (!otherP) return null;
+                  if (!otherP) return null; // Should not happen if data structure is correct
                   return (
                     <Button
                       key={conv.id}
@@ -213,21 +207,13 @@ export default function MessagesPage() {
                       onClick={() => setSelectedConversationId(conv.id)}
                     >
                       <Avatar className="mr-3 h-10 w-10 border relative">
-                        <AvatarImage src={otherP.photoURL} alt={otherP.alias} data-ai-hint="profile avatar" />
-                        <AvatarFallback>{otherP.alias?.substring(0,2).toUpperCase()}</AvatarFallback>
-                        {/* Online status indicator placeholder */}
-                        {/* {otherP.online && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-card"></div>} */}
+                        <AvatarImage src={otherP.photoURL || `https://placehold.co/40x40.png?text=${otherP.alias?.substring(0,2).toUpperCase()}`} alt={otherP.alias} data-ai-hint="profile avatar" />
+                        <AvatarFallback>{otherP.alias?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 text-left overflow-hidden">
                         <p className="font-semibold text-sm truncate">{otherP.alias}</p>
                         <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
                       </div>
-                      {/* Unread count placeholder */}
-                      {/* {conv.unreadCount && conv.unreadCount > 0 && (
-                        <span className="ml-auto text-xs bg-primary text-primary-foreground rounded-full px-2 py-0.5">
-                          {conv.unreadCount}
-                        </span>
-                      )} */}
                     </Button>
                   );
                 })}
@@ -242,13 +228,11 @@ export default function MessagesPage() {
               <CardHeader className="border-b">
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 border relative">
-                    <AvatarImage src={otherParticipantDetailsInSelectedConvo.photoURL} alt={otherParticipantDetailsInSelectedConvo.alias} data-ai-hint="profile avatar"/>
-                    <AvatarFallback>{otherParticipantDetailsInSelectedConvo.alias?.substring(0,2).toUpperCase()}</AvatarFallback>
-                    {/* Online status placeholder */}
+                    <AvatarImage src={otherParticipantDetailsInSelectedConvo.photoURL || `https://placehold.co/40x40.png?text=${otherParticipantDetailsInSelectedConvo.alias?.substring(0,2).toUpperCase()}`} alt={otherParticipantDetailsInSelectedConvo.alias} data-ai-hint="profile avatar"/>
+                    <AvatarFallback>{otherParticipantDetailsInSelectedConvo.alias?.substring(0,2).toUpperCase() || 'U'}</AvatarFallback>
                   </Avatar>
                   <div>
                     <CardTitle className="text-lg">{otherParticipantDetailsInSelectedConvo.alias}</CardTitle>
-                    {/* <CardDescription className="text-xs">{otherParticipantDetailsInSelectedConvo.online ? "En línea" : "Desconectado"}</CardDescription> */}
                   </div>
                 </div>
               </CardHeader>
@@ -322,7 +306,9 @@ export default function MessagesPage() {
             <CardContent className="flex flex-col items-center justify-center h-full">
               <MessageSquareIcon className="w-16 h-16 text-muted-foreground mb-4" />
               <p className="text-muted-foreground">Selecciona una conversación para empezar a chatear.</p>
-              <p className="text-xs text-muted-foreground mt-2">(O inicia una nueva desde el perfil de un usuario o grupo - funcionalidad futura).</p>
+              { loadingConversations && conversations.length === 0 && !user && (
+                 <p className="text-xs text-muted-foreground mt-2">O inicia sesión para ver tus mensajes.</p>
+              )}
             </CardContent>
           )}
         </Card>
@@ -330,5 +316,3 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-    
