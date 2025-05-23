@@ -11,25 +11,21 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap, Star } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, type FirestoreError } from 'firebase/firestore';
 
 // Define an interface for subscription data for type safety
 interface SubscriptionOffer {
   id: string;
   serviceName: string;
-  type?: string; // type might not always be present for a listing
+  type?: string;
   pricePerSpot: number; // Final price shown to subscriber
-  currency?: string; // currency might not always be present
+  currency?: string;
   spotsAvailable: number;
   totalSpots: number;
   iconUrl: string;
   dataAiHint?: string;
-  status?: string; // From listings
+  status?: string;
 }
-
-
-// Removed static metadata export as this is now a Client Component.
-// Metadata should be handled in a parent Server Component layout or via dynamic metadata generation.
 
 const faqItems = [
   {
@@ -61,22 +57,24 @@ const trustPillars = [
   { title: "Soporte Dedicado", description: "Nuestro equipo está aquí para ayudarte con cualquier consulta o disputa.", icon: MessageCircle },
 ];
 
-
 export default function LandingPage() {
   const [popularSubscriptions, setPopularSubscriptions] = useState<SubscriptionOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
 
   useEffect(() => {
     const fetchPopularSubscriptions = async () => {
       setLoading(true);
+      setFetchError(null);
       try {
         // Assuming 'listings' collection stores sharable subscriptions
         // and they have 'isActive' (boolean) and 'popularity' (number) fields.
         const listingsRef = collection(db, "listings");
         const q = query(
           listingsRef,
-          where("isActive", "==", true), // You'll need an 'isActive' field in your listings
-          orderBy("popularity", "desc"),  // You'll need a 'popularity' field in your listings
+          where("isActive", "==", true), // Ensure this field exists in your Firestore documents and you have an index for it
+          orderBy("popularity", "desc"),  // Ensure this field exists and you have an index for it
           limit(8)
         );
         const querySnapshot = await getDocs(q);
@@ -85,19 +83,30 @@ export default function LandingPage() {
           const data = doc.data();
           fetchedSubscriptions.push({
             id: doc.id,
-            serviceName: data.serviceName,
-            pricePerSpot: data.pricePerSpot || data.desiredPricePerSpot, // Adjust based on your data model
-            spotsAvailable: data.spotsAvailable,
-            totalSpots: data.totalSpots,
-            iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${data.serviceName.substring(0,1)}`,
-            status: data.status,
-            // Add other fields as necessary, e.g., currency, type
+            serviceName: data.serviceName || "Unknown Service",
+            pricePerSpot: data.pricePerSpot || 0,
+            spotsAvailable: data.spotsAvailable || 0,
+            totalSpots: data.totalSpots || 0,
+            iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${(data.serviceName || "S").substring(0,1)}`,
+            status: data.status || "Unknown",
+            type: data.type,
+            currency: data.currency,
+            dataAiHint: data.dataAiHint || data.serviceName?.toLowerCase().split(" ").slice(0,2).join(" ") || "service logo",
           });
         });
         setPopularSubscriptions(fetchedSubscriptions);
       } catch (error) {
-        console.error("Error fetching popular subscriptions:", error);
-        // Handle error appropriately, maybe set an error state
+        const firebaseError = error as FirestoreError;
+        console.error("Error fetching popular subscriptions from Firestore:", firebaseError);
+        if (firebaseError.code === 'permission-denied') {
+          console.warn("Firestore permission denied. Check your security rules to allow unauthenticated reads for 'listings' on the landing page.");
+          setFetchError("No se pueden cargar las suscripciones en este momento debido a permisos. Asegúrate de que las reglas de seguridad de Firestore permitan la lectura pública de 'listings'.");
+        } else if (firebaseError.code === 'failed-precondition') {
+           console.warn("Firestore query failed due to missing index. Please create the required composite index in your Firebase console for the 'listings' collection involving 'isActive' and 'popularity'.");
+           setFetchError("No se pueden cargar las suscripciones en este momento. Es posible que falte un índice en la base de datos. Revisa la consola para más detalles.");
+        } else {
+          setFetchError("No se pudieron cargar las suscripciones populares. Inténtalo de nuevo más tarde.");
+        }
       } finally {
         setLoading(false);
       }
@@ -147,7 +156,7 @@ export default function LandingPage() {
     },
     "areaServed": {
       "@type": "Country",
-      "name": "Global" 
+      "name": "Global"
     },
     "description": "Conecta con personas para compartir gastos de suscripciones a servicios digitales como Netflix, Spotify, y más, de forma segura y económica en SuscripGrupo. Pagos procesados vía Stripe.",
     "name": "Compartir Suscripciones Digitales en SuscripGrupo"
@@ -165,6 +174,7 @@ export default function LandingPage() {
       }
     }))
   };
+
 
   return (
     <>
@@ -232,6 +242,12 @@ export default function LandingPage() {
               <div className="text-center py-10">
                 <Icons.Logo className="mx-auto h-12 w-12 text-muted-foreground animate-spin mb-4" />
                 <p className="text-muted-foreground">Cargando suscripciones populares...</p>
+              </div>
+            ) : fetchError ? (
+              <div className="text-center py-10 text-red-600">
+                <ShieldCheck className="mx-auto h-12 w-12 mb-4" />
+                <p className="font-semibold">Error al Cargar Suscripciones</p>
+                <p className="text-sm">{fetchError}</p>
               </div>
             ) : popularSubscriptions.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -341,5 +357,3 @@ export default function LandingPage() {
     </>
   );
 }
-
-    
