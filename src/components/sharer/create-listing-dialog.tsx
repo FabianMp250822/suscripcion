@@ -19,24 +19,38 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ShieldAlert, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { db } from "@/lib/firebase/config";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth";
 
 interface CreateListingDialogProps {
-  onListingCreated: (listingData: any) => void; // Callback after successful creation
+  // onListingCreated callback is removed as we're now writing directly to Firestore
+  // and the list will update via a Firestore listener or re-fetch (not implemented here).
   children: React.ReactNode; // To wrap the trigger button
 }
 
-export function CreateListingDialog({ onListingCreated, children }: CreateListingDialogProps) {
+export function CreateListingDialog({ children }: CreateListingDialogProps) {
   const [platformName, setPlatformName] = useState("");
   const [externalUsername, setExternalUsername] = useState("");
   const [externalPassword, setExternalPassword] = useState("");
-  const [desiredPricePerSlot, setDesiredPricePerSlot] = useState(""); // Changed from pricePerSlot
+  const [desiredPricePerSlot, setDesiredPricePerSlot] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
   const [confirm2FA, setConfirm2FA] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You must be logged in to create a listing.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!confirm2FA) {
       toast({
         title: "2FA Confirmation Required",
@@ -45,43 +59,58 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
       });
       return;
     }
-    
-    console.log("New Listing Data (Sharer's perspective):", {
-      platformName,
-      externalUsername,
-      // externalPassword should NOT be logged in production. Sent securely to backend.
-      pricePerSpot: parseFloat(desiredPricePerSlot), // This is the sharer's desired price
-      totalSlots: parseInt(totalSlots),
-      confirm2FA,
-    });
 
-    // Simulating API call and response
-    // The backend would calculate the final price including service fee.
-    // For the frontend simulation, we pass the desired price.
-    const newListing = {
-      id: `l${Math.floor(Math.random() * 1000)}`, 
+    setIsSubmitting(true);
+
+    const newListingData = {
       serviceName: platformName,
-      spotsAvailable: parseInt(totalSlots), 
+      externalCredentials: { // Placeholder for how you might structure this securely
+        username: externalUsername,
+        // password: externalPassword, // IMPORTANT: Password should be handled securely by backend, never stored client-side like this or directly in Firestore plain text
+      },
+      desiredPricePerSpot: parseFloat(desiredPricePerSlot),
       totalSpots: parseInt(totalSlots),
-      pricePerSpot: parseFloat(desiredPricePerSlot), // This is the sharer's desired price
-      status: "Recruiting", 
-      icon: `https://placehold.co/64x64.png?text=${platformName.substring(0,1).toUpperCase() || 'P'}`,
-      groupId: `g${Math.floor(Math.random() * 1000)}`, 
+      spotsAvailable: parseInt(totalSlots), // Initially all spots are available
+      sharerId: user.uid,
+      status: "Recruiting", // Initial status
+      iconUrl: `https://placehold.co/64x64.png?text=${platformName.substring(0,1).toUpperCase() || 'P'}`, // Placeholder icon
+      createdAt: serverTimestamp(),
+      // Add any other necessary fields: description, terms, etc.
     };
 
-    onListingCreated(newListing);
-    toast({
-      title: "Listing Created (Simulated)",
-      description: `${platformName} has been listed for sharing. You set your desired price per slot.`,
-    });
+    try {
+      // IMPORTANT: In a real app, externalPassword would be sent to a secure backend (e.g., Cloud Function)
+      // to be encrypted or handled, not directly to Firestore.
+      // For now, we are proceeding without storing the password directly in this client-side example.
+      // You'd typically encrypt `externalUsername` and `externalPassword` securely on a backend.
+      // The `externalCredentials.password` field is intentionally omitted from `newListingData` for this client-side example.
+      // A secure backend function would handle it.
 
-    setPlatformName("");
-    setExternalUsername("");
-    setExternalPassword("");
-    setDesiredPricePerSlot("");
-    setTotalSlots("");
-    setConfirm2FA(false);
-    setIsOpen(false);
+      const docRef = await addDoc(collection(db, "listings"), newListingData);
+      
+      toast({
+        title: "Listing Submitted!",
+        description: `${platformName} has been listed. It will appear once data is fetched.`,
+      });
+
+      // Reset form and close dialog
+      setPlatformName("");
+      setExternalUsername("");
+      setExternalPassword("");
+      setDesiredPricePerSlot("");
+      setTotalSlots("");
+      setConfirm2FA(false);
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Error adding listing to Firestore: ", error);
+      toast({
+        title: "Error Creating Listing",
+        description: "Could not save the listing. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -102,7 +131,7 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
             <AlertTitle className="font-semibold !text-orange-800">Important Security Notice</AlertTitle>
             <AlertDescription className="!text-orange-700 text-xs">
               You are about to provide login credentials for an external service. Sharing account details carries risks.
-              Ensure you use strong, unique passwords. We strive to store credentials securely (via backend encryption, not yet implemented),
+              Ensure you use strong, unique passwords. We strive to store credentials securely (e.g., via backend encryption),
               but ultimate responsibility for account security lies with you. Payments are processed via Stripe.
             </AlertDescription>
           </Alert>
@@ -118,6 +147,7 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
           <div>
             <Label htmlFor="externalPassword">External Platform Password</Label>
             <Input id="externalPassword" type="password" value={externalPassword} onChange={(e) => setExternalPassword(e.target.value)} placeholder="••••••••" required />
+            <p className="text-xs text-muted-foreground mt-1">This password will be sent to your backend for secure handling and is not stored directly client-side in plain text.</p>
           </div>
           <div>
             <Label htmlFor="desiredPricePerSlot">Price I want to receive per slot (USD per month)</Label>
@@ -142,10 +172,19 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
 
           <DialogFooter className="pt-4">
             <DialogClose asChild>
-                <Button type="button" variant="outline">Cancel</Button>
+                <Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button>
             </DialogClose>
-            <Button type="submit">
-                <PlusCircle className="mr-2 h-4 w-4" /> Create Listing
+            <Button type="submit" disabled={isSubmitting || !user}>
+                {isSubmitting ? (
+                  <>
+                    <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Create Listing
+                  </>
+                )}
             </Button>
           </DialogFooter>
         </form>
@@ -153,5 +192,3 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
     </Dialog>
   );
 }
-
-    

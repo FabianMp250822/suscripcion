@@ -7,7 +7,7 @@ import {
   BarChart3,
   Settings,
   List,
-  Users as UsersIcon, // for Manage Group
+  // Users as UsersIcon, // Duplicate, Users is already imported
   DollarSign,
   CheckCircle,
   History,
@@ -55,7 +55,7 @@ export const Icons = {
   Logout: LogOut,
   Moon,
   Sun,
-  Logo: Shapes,
+  Logo: Shapes, // Used for general logo, including in CreateListingDialog submitting state
   Dashboard: LayoutDashboard,
   UserCircle,
   Bell,

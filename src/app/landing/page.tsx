@@ -16,7 +16,7 @@ interface SubscriptionOffer {
   id: string;
   name: string;
   type: string;
-  price: number;
+  price: number; // Final price shown to subscriber
   currency: string;
   availability: string;
   icon: string;
@@ -108,7 +108,7 @@ export default function LandingPage() {
     "name": "SuscripGrupo",
     "url": "https://suscripgrupo.example.com", // Replace with your actual URL
     "logo": "https://suscripgrupo.example.com/logo.png", // Replace with your actual logo URL
-    "parentOrganization": { 
+    "parentOrganization": {
         "@type": "Organization",
         "name": "tecnosalud internacional"
     },
@@ -118,7 +118,7 @@ export default function LandingPage() {
       "contactType": "Customer Support",
       "email": "soporte@tecnolsalud.cloud"
     },
-    "sameAs": [ 
+    "sameAs": [
       // "https://www.facebook.com/yourplatform",
       // "https://www.twitter.com/yourplatform",
       // "https://www.linkedin.com/company/yourplatform"
@@ -270,7 +270,6 @@ export default function LandingPage() {
               <div className="text-center py-10">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">No hay suscripciones populares para mostrar en este momento. ¡Vuelve pronto o explora todos los grupos!</p>
-                <p className="text-muted-foreground mt-2">// TODO: Implementar carga dinámica de suscripciones populares desde Firestore.</p>
               </div>
             )}
              <div className="text-center mt-12">
