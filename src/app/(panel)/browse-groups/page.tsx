@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,6 +12,7 @@ import { Icons } from "@/components/icons";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, orderBy, limit, getDocs, type DocumentData, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth"; 
+import { GroupDetailsDialog } from "@/components/group-details-dialog";
 
 interface GroupListing {
   id: string;
@@ -147,7 +147,7 @@ export default function BrowseGroupsPage() {
       ) : filteredGroups.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredGroups.map((group) => {
-            const isOwnListing = user && group.sharerId === user.uid;
+            const isOwnListing = !!user && group.sharerId === user.uid;
             const buttonDisabled = group.status === 'Full' || group.spotsAvailable === 0 || isOwnListing;
 
             return (
@@ -193,17 +193,28 @@ export default function BrowseGroupsPage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button 
-                    className="w-full" 
-                    disabled={buttonDisabled && !isOwnListing} // Keep enabled for own listing to manage
-                    asChild
-                    variant={isOwnListing ? "outline" : "default"}
-                  >
-                    <Link href={isOwnListing ? `/manage-group/${group.id}` : `/join-group/${group.id}`}>
-                      {isOwnListing ? <Settings2 className="mr-2 h-4 w-4" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
-                      {isOwnListing ? 'Manage Your Listing' : (group.status === 'Full' || group.spotsAvailable === 0 ? 'Group Full' : 'View Details & Join')}
-                    </Link>
-                  </Button>
+                  {isOwnListing ? (
+                    <Button 
+                      className="w-full" 
+                      variant="outline" 
+                      asChild
+                    >
+                      <Link href={`/manage-group/${group.id}`}>
+                        <Settings2 className="mr-2 h-4 w-4" />
+                        Manage Your Listing
+                      </Link>
+                    </Button>
+                  ) : (
+                    <GroupDetailsDialog group={group}>
+                      <Button 
+                        className="w-full" 
+                        disabled={buttonDisabled}
+                      >
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        {group.status === 'Full' || group.spotsAvailable === 0 ? 'Group Full' : 'View Details & Join'}
+                      </Button>
+                    </GroupDetailsDialog>
+                  )}
                 </CardFooter>
               </Card>
             );
