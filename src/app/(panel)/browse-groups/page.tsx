@@ -5,13 +5,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Search, ShoppingCart, Filter, Star, Loader2 } from "lucide-react";
+import { Users, Search, ShoppingCart, Filter, Star, Loader2, Settings2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, orderBy, limit, getDocs, type DocumentData, Timestamp } from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth"; // Import useAuth
 
 interface GroupListing {
   id: string;
@@ -26,6 +27,7 @@ interface GroupListing {
   ownerReputation?: number;
   totalRatings?: number;
   createdAt?: Timestamp;
+  sharerId?: string; // Added to identify the owner of the listing
 }
 
 const StarRating = ({ rating, totalRatings }: { rating?: number; totalRatings?: number }) => {
@@ -55,18 +57,21 @@ export default function BrowseGroupsPage() {
   const [availableGroups, setAvailableGroups] = useState<GroupListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const { user } = useAuth(); // Get current user
 
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true);
       try {
         const listingsRef = collection(db, "listings");
+        // Fetch all listings, filtering can be done client-side or by more specific queries later
+        // For now, we fetch active ones or those with spots
         const q = query(
           listingsRef,
-          where("spotsAvailable", ">", 0),
-          orderBy("ownerReputation", "desc"), 
+          where("spotsAvailable", ">", 0), // Example: only show groups with spots
+          // orderBy("ownerReputation", "desc"), // Keep if ownerReputation is reliably present
           orderBy("createdAt", "desc"),
-          limit(20)
+          limit(50) // Increased limit to ensure user's own listings are likely fetched
         );
         
         const querySnapshot = await getDocs(q);
@@ -88,9 +93,10 @@ export default function BrowseGroupsPage() {
             iconUrl: data.iconUrl || `https://placehold.co/64x64.png?text=${(data.serviceName || "S").substring(0,1)}`,
             sharerName: data.sharerName || "Usuario",
             sharerAvatar: data.sharerAvatar || 'https://placehold.co/40x40.png?text=S',
-            ownerReputation: data.ownerReputation, // Ensure this field exists or provide default
-            totalRatings: data.totalRatings, // Ensure this field exists
+            ownerReputation: data.ownerReputation,
+            totalRatings: data.totalRatings,
             createdAt: data.createdAt,
+            sharerId: data.sharerId, // Ensure sharerId is fetched
           } as GroupListing);
         });
         setAvailableGroups(fetchedListings);
@@ -140,52 +146,63 @@ export default function BrowseGroupsPage() {
           </div>
       ) : filteredGroups.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredGroups.map((group) => (
-            <Card key={group.id} className="shadow-lg flex flex-col hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                <Image src={group.iconUrl || `https://placehold.co/64x64.png?text=${group.serviceName.substring(0,1)}`} alt={group.serviceName} width={64} height={64} className="rounded-lg object-contain" data-ai-hint="app logo" />
-                <div className="flex-1">
-                  <CardTitle className="text-xl">{group.serviceName}</CardTitle>
-                  <CardDescription>
-                    Shared by: {group.sharerName || "Usuario"}
-                  </CardDescription>
-                   <div className="mt-1">
-                    <StarRating rating={group.ownerReputation} totalRatings={group.totalRatings} />
+          {filteredGroups.map((group) => {
+            const isOwnListing = user && group.sharerId === user.uid;
+            const buttonDisabled = group.status === 'Full' || group.spotsAvailable === 0 || isOwnListing;
+
+            return (
+              <Card key={group.id} className="shadow-lg flex flex-col hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="flex flex-row items-start gap-4 space-y-0">
+                  <Image src={group.iconUrl || `https://placehold.co/64x64.png?text=${group.serviceName.substring(0,1)}`} alt={group.serviceName} width={64} height={64} className="rounded-lg object-contain" data-ai-hint="app logo" />
+                  <div className="flex-1">
+                    <CardTitle className="text-xl">{group.serviceName}</CardTitle>
+                    <CardDescription>
+                      Shared by: {group.sharerName || "Usuario"}
+                      {isOwnListing && <Badge variant="secondary" className="ml-2">Your Listing</Badge>}
+                    </CardDescription>
+                    <div className="mt-1">
+                      <StarRating rating={group.ownerReputation} totalRatings={group.totalRatings} />
+                    </div>
                   </div>
-                </div>
-                <Badge 
-                  variant={group.status === 'Recruiting' ? 'default' : group.status === 'Full' ? 'secondary' : 'outline'}
-                  className={
-                    group.status === 'Recruiting' ? 'bg-blue-500/20 text-blue-700 border-blue-500/30' : 
-                    group.status === 'Active' ? 'bg-green-500/20 text-green-700 border-green-500/30' :
-                    group.status === 'Full' ? 'bg-gray-500/20 text-gray-700 border-gray-500/30' : ''
-                  }
-                >
-                  {group.status === 'Full' ? 'Full' : `${group.spotsAvailable} spot${group.spotsAvailable !== 1 ? 's' : ''} left`}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <p className="text-2xl font-semibold">${(group.pricePerSpot ?? 0).toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
-                <p className="text-xs text-muted-foreground mt-1">(Final price. Includes SuscripGrupo service fee. Breakdown shown before payment.)</p>
-                <div className="mt-2 flex items-center text-sm text-muted-foreground">
-                  <Users className="mr-1 h-4 w-4" />
-                  <span>{group.totalSpots - group.spotsAvailable} / {group.totalSpots} members</span>
-                </div>
-                 <div className="mt-2 flex items-center">
-                    <Image src={group.sharerAvatar || 'https://placehold.co/40x40.png?text=S'} alt={group.sharerName || "Sharer"} width={24} height={24} className="rounded-full mr-2" data-ai-hint="profile avatar" />
-                    <span className="text-xs text-muted-foreground">Sharer: {group.sharerName || "Usuario"}</span>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button className="w-full" disabled={group.status === 'Full' || group.spotsAvailable === 0} asChild>
-                  <Link href={`/join-group/${group.id}`}> {/* Placeholder link */}
-                    {group.status === 'Full' || group.spotsAvailable === 0 ? <Users className="mr-2 h-4 w-4" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
-                    {group.status === 'Full' || group.spotsAvailable === 0 ? 'Group Full' : 'View Details & Join'}
-                  </Link>
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+                  <Badge 
+                    variant={group.status === 'Recruiting' ? 'default' : group.status === 'Full' ? 'secondary' : 'outline'}
+                    className={
+                      group.status === 'Recruiting' ? 'bg-blue-500/20 text-blue-700 border-blue-500/30' : 
+                      group.status === 'Active' ? 'bg-green-500/20 text-green-700 border-green-500/30' :
+                      group.status === 'Full' || group.spotsAvailable === 0 ? 'bg-destructive/20 text-destructive border-destructive/30' : ''
+                    }
+                  >
+                    {group.status === 'Full' || group.spotsAvailable === 0 ? 'Full' : `${group.spotsAvailable} spot${group.spotsAvailable !== 1 ? 's' : ''} left`}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <p className="text-2xl font-semibold">${(group.pricePerSpot ?? 0).toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
+                  <p className="text-xs text-muted-foreground mt-1">(Final price. Includes SuscripGrupo service fee. Breakdown shown before payment.)</p>
+                  <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                    <Users className="mr-1 h-4 w-4" />
+                    <span>{group.totalSpots - group.spotsAvailable} / {group.totalSpots} members</span>
+                  </div>
+                  <div className="mt-2 flex items-center">
+                      <Image src={group.sharerAvatar || 'https://placehold.co/40x40.png?text=S'} alt={group.sharerName || "Sharer"} width={24} height={24} className="rounded-full mr-2" data-ai-hint="profile avatar" />
+                      <span className="text-xs text-muted-foreground">Sharer: {group.sharerName || "Usuario"}</span>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full" 
+                    disabled={buttonDisabled} 
+                    asChild
+                    variant={isOwnListing ? "outline" : "default"}
+                  >
+                    <Link href={isOwnListing ? `/manage-group/${group.id}` : `/join-group/${group.id}`}>
+                      {isOwnListing ? <Settings2 className="mr-2 h-4 w-4" /> : <ShoppingCart className="mr-2 h-4 w-4" />}
+                      {isOwnListing ? 'Manage Your Listing' : (group.status === 'Full' || group.spotsAvailable === 0 ? 'Group Full' : 'View Details & Join')}
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       ) : (
          <Card className="shadow-lg">
@@ -199,3 +216,4 @@ export default function BrowseGroupsPage() {
     </div>
   );
 }
+
