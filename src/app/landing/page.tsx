@@ -1,72 +1,35 @@
 
-// Ensure no "use client"; directive is present
+"use client"; // Needs to be a client component for useEffect and useState
 
-import type { Metadata } from 'next';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap } from 'lucide-react';
+import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap, Star } from 'lucide-react';
 import { Icons } from '@/components/icons';
+import { db } from '@/lib/firebase/config';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 
 // Define an interface for subscription data for type safety
 interface SubscriptionOffer {
   id: string;
-  name: string;
-  type: string;
-  price: number; // Final price shown to subscriber
-  currency: string;
-  availability: string;
-  icon: string;
-  dataAiHint: string;
+  serviceName: string;
+  type?: string; // type might not always be present for a listing
+  pricePerSpot: number; // Final price shown to subscriber
+  currency?: string; // currency might not always be present
+  spotsAvailable: number;
+  totalSpots: number;
+  iconUrl: string;
+  dataAiHint?: string;
+  status?: string; // From listings
 }
 
 
-export const metadata: Metadata = {
-  title: 'SuscripGrupo: Comparte y Ahorra en Suscripciones',
-  description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza. Comparte tus suscripciones de forma segura con SuscripGrupo.',
-  keywords: 'suscripgrupo, compartir suscripciones, dividir gastos, ahorrar suscripciones, netflix compartido, spotify familiar, hbo max grupo, disney plus compartido, youtube premium familiar, plataforma de suscripciones',
-  openGraph: {
-    title: 'SuscripGrupo: Comparte y Ahorra en Suscripciones',
-    description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza en SuscripGrupo.',
-    url: 'https://suscripgrupo.example.com/landing', // Replace with your actual URL
-    siteName: 'SuscripGrupo',
-    images: [
-      {
-        url: 'https://suscripgrupo.example.com/og-image.png', // Replace with your actual OG image URL
-        width: 1200,
-        height: 630,
-        alt: 'SuscripGrupo - Comparte Suscripciones',
-      },
-    ],
-    locale: 'es_ES',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'SuscripGrupo: Comparte y Ahorra en Suscripciones',
-    description: 'Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza en SuscripGrupo.',
-    // site: '@yourtwitterhandle', // Replace with your Twitter handle if any
-    images: ['https://suscripgrupo.example.com/twitter-image.png'], // Replace with your actual Twitter image URL
-  },
-  alternates: {
-    canonical: 'https://suscripgrupo.example.com/landing', // Replace with your actual URL
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
-  },
-};
-
+// Removed static metadata export as this is now a Client Component.
+// Metadata should be handled in a parent Server Component layout or via dynamic metadata generation.
 
 const faqItems = [
   {
@@ -98,10 +61,51 @@ const trustPillars = [
   { title: "Soporte Dedicado", description: "Nuestro equipo está aquí para ayudarte con cualquier consulta o disputa.", icon: MessageCircle },
 ];
 
-// popularSubscriptions array is intentionally empty as data will come from Firestore
-const popularSubscriptions: SubscriptionOffer[] = [];
 
 export default function LandingPage() {
+  const [popularSubscriptions, setPopularSubscriptions] = useState<SubscriptionOffer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPopularSubscriptions = async () => {
+      setLoading(true);
+      try {
+        // Assuming 'listings' collection stores sharable subscriptions
+        // and they have 'isActive' (boolean) and 'popularity' (number) fields.
+        const listingsRef = collection(db, "listings");
+        const q = query(
+          listingsRef,
+          where("isActive", "==", true), // You'll need an 'isActive' field in your listings
+          orderBy("popularity", "desc"),  // You'll need a 'popularity' field in your listings
+          limit(8)
+        );
+        const querySnapshot = await getDocs(q);
+        const fetchedSubscriptions: SubscriptionOffer[] = [];
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          fetchedSubscriptions.push({
+            id: doc.id,
+            serviceName: data.serviceName,
+            pricePerSpot: data.pricePerSpot || data.desiredPricePerSpot, // Adjust based on your data model
+            spotsAvailable: data.spotsAvailable,
+            totalSpots: data.totalSpots,
+            iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${data.serviceName.substring(0,1)}`,
+            status: data.status,
+            // Add other fields as necessary, e.g., currency, type
+          });
+        });
+        setPopularSubscriptions(fetchedSubscriptions);
+      } catch (error) {
+        console.error("Error fetching popular subscriptions:", error);
+        // Handle error appropriately, maybe set an error state
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPopularSubscriptions();
+  }, []);
+
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -118,11 +122,7 @@ export default function LandingPage() {
       "contactType": "Customer Support",
       "email": "soporte@tecnolsalud.cloud"
     },
-    "sameAs": [
-      // "https://www.facebook.com/yourplatform",
-      // "https://www.twitter.com/yourplatform",
-      // "https://www.linkedin.com/company/yourplatform"
-    ]
+    "sameAs": []
   };
 
   const websiteSchema = {
@@ -147,7 +147,7 @@ export default function LandingPage() {
     },
     "areaServed": {
       "@type": "Country",
-      "name": "Global" // Or specify countries
+      "name": "Global" 
     },
     "description": "Conecta con personas para compartir gastos de suscripciones a servicios digitales como Netflix, Spotify, y más, de forma segura y económica en SuscripGrupo. Pagos procesados vía Stripe.",
     "name": "Compartir Suscripciones Digitales en SuscripGrupo"
@@ -228,37 +228,42 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Suscripciones Populares en SuscripGrupo</h2>
               <p className="text-lg text-muted-foreground mt-2">Descubre algunos de los servicios que puedes compartir o unirte.</p>
             </div>
-            {popularSubscriptions.length > 0 ? (
+            {loading ? (
+              <div className="text-center py-10">
+                <Icons.Logo className="mx-auto h-12 w-12 text-muted-foreground animate-spin mb-4" />
+                <p className="text-muted-foreground">Cargando suscripciones populares...</p>
+              </div>
+            ) : popularSubscriptions.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {popularSubscriptions.map((sub) => (
                   <Card key={sub.id} className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col overflow-hidden rounded-xl border-border">
                     <CardHeader className="p-0">
                       <Image
-                        src={sub.icon}
-                        alt={sub.name}
+                        src={sub.iconUrl}
+                        alt={sub.serviceName}
                         width={400}
                         height={200}
                         className="w-full h-40 object-contain p-4 bg-slate-100 dark:bg-slate-700"
-                        data-ai-hint={sub.dataAiHint}
+                        data-ai-hint={sub.dataAiHint || sub.serviceName.toLowerCase()}
                       />
                     </CardHeader>
                     <CardContent className="p-6 flex-1 flex flex-col">
-                      <h3 className="text-xl font-semibold text-foreground mb-1">{sub.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>
+                      <h3 className="text-xl font-semibold text-foreground mb-1">{sub.serviceName}</h3>
+                      {sub.type && <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>}
                       <div className="mt-auto">
-                        <p className="text-2xl font-bold text-primary mb-1">${sub.price.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+                        <p className="text-2xl font-bold text-primary mb-1">${sub.pricePerSpot.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
                         <p className="text-xs text-muted-foreground mt-1">(Incluye tarifa de servicio SuscripGrupo. Desglose antes del pago.)</p>
                         <Badge
-                          variant={sub.availability.toLowerCase().includes("sold out") ? "destructive" : "default"}
-                          className={`${sub.availability.toLowerCase().includes("sold out") ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
+                          variant={sub.status === "Full" || sub.spotsAvailable === 0 ? "destructive" : "default"}
+                          className={`${sub.status === "Full" || sub.spotsAvailable === 0 ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
                         >
-                          {sub.availability}
+                          {sub.status === "Full" || sub.spotsAvailable === 0 ? "Agotado" : `${sub.spotsAvailable} cupos disponibles`}
                         </Badge>
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 bg-slate-50 dark:bg-slate-700/50 border-t">
-                      <Button className="w-full bg-primary hover:bg-primary/90" asChild disabled={sub.availability.toLowerCase().includes("sold out")}>
-                          <Link href={`/browse-groups?service=${encodeURIComponent(sub.name)}`}>
+                      <Button className="w-full bg-primary hover:bg-primary/90" asChild disabled={sub.status === "Full" || sub.spotsAvailable === 0}>
+                          <Link href={`/browse-groups?service=${encodeURIComponent(sub.serviceName)}`}>
                               Ver Detalles
                           </Link>
                       </Button>
@@ -336,3 +341,5 @@ export default function LandingPage() {
     </>
   );
 }
+
+    

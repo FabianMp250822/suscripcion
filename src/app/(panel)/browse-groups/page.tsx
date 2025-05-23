@@ -1,25 +1,76 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Search, ExternalLink, ShoppingCart, Filter } from "lucide-react";
+import { Users, Search, ShoppingCart, Filter, Star } from "lucide-react"; // Added Star
 import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { Icons } from "@/components/icons";
 
-// Mock data for available groups (sharers' listings)
-// pricePerSpot here is the FINAL PRICE (sharer's desired price + service fee)
-const availableGroups = [
-  { id: "g1", serviceName: "Netflix Ultra HD Plan", spotsAvailable: 1, totalSpots: 4, pricePerSpot: 7.65, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=N", sharerName: "Bob The Sharer", sharerAvatar: "https://placehold.co/40x40.png?text=BS" }, // Was 6.50
-  { id: "g2", serviceName: "Spotify Premium Family", spotsAvailable: 3, totalSpots: 6, pricePerSpot: 3.25, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=S", sharerName: "Alice Listswell", sharerAvatar: "https://placehold.co/40x40.png?text=AL" }, // Was 2.75
-  { id: "g3", serviceName: "HBO Max Standard", spotsAvailable: 0, totalSpots: 3, pricePerSpot: 5.90, status: "Full", icon: "https://placehold.co/64x64.png?text=H", sharerName: "Charlie Streamer", sharerAvatar: "https://placehold.co/40x40.png?text=CS" }, // Was 5.00
-  { id: "g4", serviceName: "Disney+ Bundle", spotsAvailable: 2, totalSpots: 5, pricePerSpot: 4.95, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=D", sharerName: "Diana Shares", sharerAvatar: "https://placehold.co/40x40.png?text=DS" }, // Was 4.20
-  { id: "g5", serviceName: "YouTube Premium Family", spotsAvailable: 4, totalSpots: 6, pricePerSpot: 4.10, status: "Active", icon: "https://placehold.co/64x64.png?text=YT", sharerName: "Edward Vids", sharerAvatar: "https://placehold.co/40x40.png?text=EV" }, // Was 3.50
-];
+// TODO: Define a proper interface for GroupListing that matches Firestore data
+interface GroupListing {
+  id: string;
+  serviceName: string;
+  spotsAvailable: number;
+  totalSpots: number;
+  pricePerSpot: number; // FINAL PRICE for subscriber
+  status: string;
+  iconUrl: string;
+  sharerName: string;
+  sharerAvatar: string;
+  ownerReputation?: number; // Optional, from 0 to 5
+  totalRatings?: number;
+  // Add other relevant fields from Firestore
+}
+
+const StarRating = ({ rating, totalRatings }: { rating?: number; totalRatings?: number }) => {
+  if (typeof rating !== 'number' || rating < 0) {
+    return <p className="text-xs text-muted-foreground">Sin calificaciones</p>;
+  }
+  const fullStars = Math.floor(rating);
+  const halfStar = rating % 1 >= 0.5;
+  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
+
+  return (
+    <div className="flex items-center gap-0.5">
+      {[...Array(fullStars)].map((_, i) => (
+        <Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+      ))}
+      {halfStar && <Star key="half" className="h-4 w-4 text-yellow-400 fill-yellow-200" />}
+      {[...Array(emptyStars)].map((_, i) => (
+        <Star key={`empty-${i}`} className="h-4 w-4 text-yellow-400" />
+      ))}
+      {totalRatings !== undefined && <span className="ml-1 text-xs text-muted-foreground">({totalRatings})</span>}
+    </div>
+  );
+};
+
 
 export default function BrowseGroupsPage() {
+  const [availableGroups, setAvailableGroups] = useState<GroupListing[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // TODO: Fetch dynamic data from Firestore for 'listings' or 'groups' collection
+    // Remember to implement filtering and sorting based on search, filters, and ownerReputation
+    // For now, page will show "No Groups Found" as mock data is removed.
+    const fetchListings = async () => {
+        // Example:
+        // const listingsRef = collection(db, "listings");
+        // const q = query(listingsRef, where("status", "==", "Recruiting"), orderBy("ownerReputation", "desc"));
+        // const snapshot = await getDocs(q);
+        // const fetchedListings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as GroupListing));
+        // setAvailableGroups(fetchedListings);
+        setLoading(false);
+    }
+    fetchListings();
+  }, []);
+
+
   return (
     <div className="space-y-6">
       <div>
@@ -41,17 +92,25 @@ export default function BrowseGroupsPage() {
         </CardContent>
       </Card>
 
-      {availableGroups.length > 0 ? (
+      {loading ? (
+         <div className="text-center py-10">
+            <Icons.Logo className="mx-auto h-12 w-12 text-muted-foreground animate-spin mb-4" />
+            <p className="text-muted-foreground">Cargando grupos...</p>
+          </div>
+      ) : availableGroups.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {availableGroups.map((group) => (
             <Card key={group.id} className="shadow-lg flex flex-col hover:shadow-xl transition-shadow duration-300">
               <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                <Image src={group.icon} alt={group.serviceName} width={64} height={64} className="rounded-lg" data-ai-hint="app logo" />
+                <Image src={group.iconUrl} alt={group.serviceName} width={64} height={64} className="rounded-lg" data-ai-hint="app logo" />
                 <div className="flex-1">
                   <CardTitle className="text-xl">{group.serviceName}</CardTitle>
                   <CardDescription>
                     Shared by: {group.sharerName}
                   </CardDescription>
+                   <div className="mt-1">
+                    <StarRating rating={group.ownerReputation} totalRatings={group.totalRatings} />
+                  </div>
                 </div>
                 <Badge 
                   variant={group.status === 'Active' || group.status === 'Recruiting' ? 'default' : group.status === 'Full' ? 'secondary' : 'outline'}
@@ -65,7 +124,7 @@ export default function BrowseGroupsPage() {
               </CardHeader>
               <CardContent className="flex-1">
                 <p className="text-2xl font-semibold">${group.pricePerSpot.toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
-                <p className="text-xs text-muted-foreground mt-1">(Final price. Includes SuscripGrupo service fee. Full breakdown before payment.)</p>
+                <p className="text-xs text-muted-foreground mt-1">(Final price. Includes SuscripGrupo service fee. Breakdown shown before payment.)</p>
                 <div className="mt-2 flex items-center text-sm text-muted-foreground">
                   <Users className="mr-1 h-4 w-4" />
                   <span>{group.totalSpots - group.spotsAvailable} / {group.totalSpots} members</span>

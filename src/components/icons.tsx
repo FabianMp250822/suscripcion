@@ -36,7 +36,8 @@ import {
   ReceiptText, // Alternative for payment history/transactions
   ListFilter, // For filter button
   Gavel,      // Added for Disputes
-  ShieldAlert // For security/access related alerts
+  ShieldAlert, // For security/access related alerts
+  Star, // Added for Rating system
 } from "lucide-react";
 
 export const Icons = {
@@ -73,6 +74,9 @@ export const Icons = {
   Disputes: Gavel, // For Admin Disputes
   MyDisputes: Gavel, // For User's own disputes (can be same icon)
   AdminAccessDeniedIcon: ShieldAlert, // Icon for Admin Access Denied messages
+  Star,
 };
 
 export type Icon = keyof typeof Icons;
+
+    
