@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
+import { Textarea } from "@/components/ui/textarea";
 import { ShieldAlert, PlusCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase/config";
@@ -78,7 +78,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
   const [externalPassword, setExternalPassword] = useState("");
   const [desiredPricePerSlot, setDesiredPricePerSlot] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
-  const [listingDescription, setListingDescription] = useState(""); // New state for description
+  const [listingDescription, setListingDescription] = useState("");
   const [confirm2FA, setConfirm2FA] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -91,7 +91,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
     setExternalPassword("");
     setDesiredPricePerSlot("");
     setTotalSlots("");
-    setListingDescription(""); // Reset description
+    setListingDescription("");
     setConfirm2FA(false);
   };
 
@@ -99,24 +99,24 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
     event.preventDefault();
     if (!user || !userProfile) {
       toast({
-        title: "Authentication Required",
-        description: "You must be logged in to create a listing.",
+        title: "Autenticación Requerida",
+        description: "Debes iniciar sesión para crear una publicación.",
         variant: "destructive",
       });
       return;
     }
     if (!confirm2FA) {
       toast({
-        title: "2FA Confirmation Required",
-        description: "You must confirm that 2FA is enabled on the external account.",
+        title: "Confirmación de 2FA Requerida",
+        description: "Debes confirmar que 2FA está activada en la cuenta externa.",
         variant: "destructive",
       });
       return;
     }
     if (!selectedPlatform || !externalUsername || !externalPassword || !desiredPricePerSlot || !totalSlots || !listingDescription) {
         toast({
-            title: "Missing Fields",
-            description: "Please fill out all required fields, including the description.",
+            title: "Campos Faltantes",
+            description: "Por favor, completa todos los campos obligatorios, incluyendo la selección de plataforma y la descripción.",
             variant: "destructive",
         });
         return;
@@ -124,27 +124,25 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
 
     setIsSubmitting(true);
 
-    const serviceInitial = selectedPlatform ? selectedPlatform.substring(0,1).toUpperCase() : 'S';
-    const iconUrl = `https://placehold.co/64x64.png?text=${serviceInitial}`;
+    const serviceInfo = allowedSubscriptionsList.find(s => s.value === selectedPlatform);
+    const serviceLabel = serviceInfo ? serviceInfo.label : selectedPlatform;
+    const iconUrl = `https://placehold.co/64x64.png?text=${serviceLabel.substring(0,1).toUpperCase() || 'P'}`;
 
     const newListingData = {
-      serviceName: selectedPlatform,
-      // IMPORTANT: In a real app, externalUsername & externalPassword should NOT be stored directly
-      // or even sent to Firestore from the client. They should be handled by a secure backend function.
-      // Omitting them here for security in this example.
-      // externalUsername: externalUsername, 
+      serviceName: selectedPlatform, 
+      // externalUsername: externalUsername, // Credenciales sensibles, manejar con cuidado
       pricePerSpot: parseFloat(desiredPricePerSlot), 
       totalSpots: parseInt(totalSlots),
       spotsAvailable: parseInt(totalSlots), 
-      listingDescription: listingDescription, // Add description to data
+      listingDescription: listingDescription, 
       sharerId: user.uid, 
+      sharerName: userProfile.alias || userProfile.displayName || "Usuario", 
+      sharerAvatar: userProfile.photoURL || `https://placehold.co/40x40.png?text=${userProfile.alias?.substring(0,1) || 'U'}`,
       status: "Recruiting", 
       iconUrl: iconUrl, 
       createdAt: serverTimestamp(),
-      sharerName: userProfile.alias || userProfile.displayName || "Usuario", 
-      sharerAvatar: userProfile.photoURL || `https://placehold.co/40x40.png?text=${userProfile.alias?.substring(0,1) || 'U'}`,
-      ownerReputation: null, 
-      totalRatings: 0,
+      ownerReputation: userProfile.reputationScore || null, 
+      totalRatings: userProfile.totalRatings || 0,
       isActive: true, 
       popularity: Math.floor(Math.random() * 100), 
     };
@@ -153,17 +151,17 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
       await addDoc(collection(db, "listings"), newListingData);
       
       toast({
-        title: "Listing Submitted!",
-        description: `${selectedPlatform} has been listed. It will appear once data is fetched.`,
+        title: "Publicación Enviada",
+        description: `${selectedPlatform} ha sido publicada. Aparecerá una vez que los datos se actualicen.`,
       });
 
       resetForm();
       setIsOpen(false);
     } catch (error) {
-      console.error("Error adding listing to Firestore: ", error);
+      console.error("Error añadiendo publicación a Firestore: ", error);
       toast({
-        title: "Error Creating Listing",
-        description: "Could not save the listing. Please try again.",
+        title: "Error Creando Publicación",
+        description: "No se pudo guardar la publicación. Por favor, inténtalo de nuevo.",
         variant: "destructive",
       });
     } finally {
@@ -178,27 +176,27 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
-          <DialogTitle>Create New Sharing Listing</DialogTitle>
+          <DialogTitle>Crear Nueva Publicación de Intercambio</DialogTitle>
           <DialogDescription>
-            Provide details of the external subscription you want to share from the approved list.
+            Proporciona los detalles de la suscripción externa que deseas compartir de la lista aprobada.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-3">
           <Alert variant="destructive" className="bg-orange-50 border-orange-300 text-orange-700">
             <ShieldAlert className="h-5 w-5 !text-orange-600" />
-            <AlertTitle className="font-semibold !text-orange-800">Important Security Notice</AlertTitle>
+            <AlertTitle className="font-semibold !text-orange-800">Aviso Importante de Seguridad</AlertTitle>
             <AlertDescription className="!text-orange-700 text-xs">
-              You are about to provide login credentials for an external service. Sharing account details carries risks.
-              Ensure you use strong, unique passwords. We strive to store credentials securely (e.g., via backend encryption),
-              but ultimate responsibility for account security lies with you. Payments are processed via Stripe.
+              Estás a punto de proporcionar credenciales de inicio de sesión para un servicio externo. Compartir detalles de cuenta conlleva riesgos.
+              Asegúrate de usar contraseñas fuertes y únicas. Nos esforzamos por manejar las credenciales de forma segura (ej. mediante cifrado en backend),
+              pero la responsabilidad última de la seguridad de la cuenta recae en ti. Los pagos se procesan vía Stripe.
             </AlertDescription>
           </Alert>
 
           <div>
-            <Label htmlFor="platformName">Platform Name</Label>
+            <Label htmlFor="platformName">Nombre de la Plataforma</Label>
             <Select value={selectedPlatform} onValueChange={setSelectedPlatform} required>
               <SelectTrigger id="platformName">
-                <SelectValue placeholder="Select a service to share..." />
+                <SelectValue placeholder="Selecciona un servicio (Obligatorio)..." />
               </SelectTrigger>
               <SelectContent>
                 {categories.map(category => (
@@ -218,62 +216,62 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="externalUsername">External Platform Username/Email</Label>
-            <Input id="externalUsername" type="text" value={externalUsername} onChange={(e) => setExternalUsername(e.target.value)} placeholder="user@example.com" required />
+            <Label htmlFor="externalUsername">Usuario/Email de la Plataforma Externa</Label>
+            <Input id="externalUsername" type="text" value={externalUsername} onChange={(e) => setExternalUsername(e.target.value)} placeholder="usuario@ejemplo.com" required />
           </div>
           <div>
-            <Label htmlFor="externalPassword">External Platform Password</Label>
+            <Label htmlFor="externalPassword">Contraseña de la Plataforma Externa</Label>
             <Input id="externalPassword" type="password" value={externalPassword} onChange={(e) => setExternalPassword(e.target.value)} placeholder="••••••••" required />
-            <p className="text-xs text-muted-foreground mt-1">This password will be sent to your backend for secure handling and is not stored directly client-side in plain text.</p>
+            <p className="text-xs text-muted-foreground mt-1">Esta contraseña será enviada a tu backend para un manejo seguro y no se almacena directamente en texto plano del lado del cliente.</p>
           </div>
           <div>
-            <Label htmlFor="desiredPricePerSlot">Price I want to receive per slot (USD per month)</Label>
+            <Label htmlFor="desiredPricePerSlot">Precio que deseo recibir por cupo (USD por mes)</Label>
             <Input id="desiredPricePerSlot" type="number" value={desiredPricePerSlot} onChange={(e) => setDesiredPricePerSlot(e.target.value)} placeholder="5.00" step="0.01" min="0" required />
-            <p className="text-xs text-muted-foreground mt-1">Subscribers will see a final price including SuscripGrupo's service fee. Payments via Stripe.</p>
+            <p className="text-xs text-muted-foreground mt-1">Los suscriptores verán un precio final incluyendo la tarifa de servicio de SuscripGrupo. Pagos vía Stripe.</p>
           </div>
            <div>
-            <Label htmlFor="totalSlots">Total Available Spots in Subscription</Label>
+            <Label htmlFor="totalSlots">Total de Cupos Disponibles en la Suscripción</Label>
             <Input id="totalSlots" type="number" value={totalSlots} onChange={(e) => setTotalSlots(e.target.value)} placeholder="4" step="1" min="1" required />
           </div>
 
           <div>
-            <Label htmlFor="listingDescription">Listing Description / Details for Participants</Label>
+            <Label htmlFor="listingDescription">Descripción / Detalles para los Participantes</Label>
             <Textarea 
               id="listingDescription" 
               value={listingDescription} 
               onChange={(e) => setListingDescription(e.target.value)} 
-              placeholder="e.g., Max 2 devices simultaneously, no profile changes, respectful use, etc." 
+              placeholder="Ej: Máx 2 dispositivos simultáneamente, no cambiar perfiles, uso respetuoso, etc." 
               rows={4}
               required 
             />
-            <p className="text-xs text-muted-foreground mt-1">Provide clear expectations for users joining your group.</p>
+            <p className="text-xs text-muted-foreground mt-1">Proporciona expectativas claras para los usuarios que se unan a tu grupo.</p>
           </div>
 
           <div className="items-top flex space-x-2 mt-4 border p-3 rounded-md bg-blue-50 border-blue-300">
             <Checkbox id="confirm2FA" checked={confirm2FA} onCheckedChange={(checked) => setConfirm2FA(!!checked)} />
             <div className="grid gap-1.5 leading-none">
               <Label htmlFor="confirm2FA" className="text-sm font-medium !text-blue-800">
-                I confirm Two-Factor Authentication (2FA) is MANDATORY and ACTIVE on this external account.
+                Confirmo que la Autenticación de Dos Factores (2FA) es OBLIGATORIA y está ACTIVA en esta cuenta externa.
               </Label>
               <p className="text-xs text-blue-700">
-                This is crucial for protecting the shared account. Failure to enable 2FA may result in account suspension.
+                Esto es crucial para proteger la cuenta compartida. No activar 2FA puede resultar en la suspensión de la cuenta.
               </p>
             </div>
           </div>
 
           <DialogFooter className="pt-4 sticky bottom-0 bg-background pb-1 z-10">
             <DialogClose asChild>
-                <Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button>
+                <Button type="button" variant="outline" disabled={isSubmitting}>Cancelar</Button>
             </DialogClose>
             <Button type="submit" disabled={isSubmitting || !user || !confirm2FA || !selectedPlatform || !listingDescription}>
                 {isSubmitting ? (
                   <>
                     <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
+                    Enviando...
                   </>
                 ) : (
                   <>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Create Listing
+                    <PlusCircle className="mr-2 h-4 w-4" /> Crear Publicación
                   </>
                 )}
             </Button>
@@ -283,3 +281,4 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
     </Dialog>
   );
 }
+
