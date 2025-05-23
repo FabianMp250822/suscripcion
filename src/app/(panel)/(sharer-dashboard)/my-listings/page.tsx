@@ -1,17 +1,20 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Edit3, Trash2, Users, Eye } from "lucide-react";
+import { PlusCircle, Edit3, Eye, Users, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { CreateListingDialog } from "@/components/sharer/create-listing-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, orderBy, onSnapshot, type DocumentData, type Unsubscribe } from "firebase/firestore";
+import { useAuth } from "@/hooks/use-auth";
+import { Icons } from "@/components/icons";
 
-// TODO: Define a proper interface for Listing
 interface Listing {
   id: string;
   serviceName: string;
@@ -19,48 +22,55 @@ interface Listing {
   totalSpots: number;
   pricePerSpot: number; // Sharer's desired price
   status: string;
-  icon: string;
-  groupId: string;
-  // Add other relevant fields that would come from Firestore
+  iconUrl: string;
+  // groupId is often the same as listingId, or a related field.
+  // For now, we'll assume listing.id can serve as groupId for the link.
+  // In a more complex setup, you might have a separate groupId.
+  createdAt?: any; // Firestore Timestamp
 }
 
 export default function MyListingsPage() {
-  const [listings, setListings] = useState<Listing[]>([]); // Initial state is empty
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // TODO: Implement actual fetching of listings from Firestore for the logged-in user
-  // useEffect(() => {
-  //   const fetchListings = async () => {
-  //     // Firestore query logic here
-  //     // setListings(fetchedData);
-  //   };
-  //   fetchListings();
-  // }, []);
+  useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
-  const handleNewListing = (newListingData: any) => {
-    // In a real app, this function would trigger a backend call to save to Firestore.
-    // The list would then update via a re-fetch or a Firestore listener.
-    // For now, we just show a toast as the UI won't update with mock data anymore.
-    console.log("New listing data to be saved to Firestore:", newListingData);
-    toast({
-      title: "Listing Submitted (Simulated)",
-      description: `${newListingData.serviceName} would be saved to Firestore. The list will update once data fetching is implemented.`,
+    setLoading(true);
+    const listingsRef = collection(db, "listings");
+    const q = query(
+      listingsRef,
+      where("sharerId", "==", user.uid),
+      orderBy("createdAt", "desc")
+    );
+
+    const unsubscribe: Unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const fetchedListings: Listing[] = [];
+      querySnapshot.forEach((doc) => {
+        fetchedListings.push({ id: doc.id, ...doc.data() } as Listing);
+      });
+      setListings(fetchedListings);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching listings: ", error);
+      toast({
+        title: "Error Fetching Listings",
+        description: "Could not load your listings. Please try again later.",
+        variant: "destructive",
+      });
+      setLoading(false);
     });
-    // DO NOT update local state here: setListings(prevListings => [...prevListings, newListingData]);
-    // This line is removed to ensure data is only sourced from Firestore.
-  };
 
-  const handleDeleteListing = (listingId: string) => {
-    // TODO: Implement Firestore deletion logic
-    console.log("Deleting listing (simulated):", listingId);
-    setListings(prev => prev.filter(l => l.id !== listingId)); // Temporary UI removal
-    toast({
-      title: "Listing Deleted (Simulated)",
-      description: "The listing would be removed from Firestore.",
-      variant: "destructive"
-    });
-  };
+    return () => unsubscribe(); // Cleanup subscription on unmount
+  }, [user, toast]);
 
+  // The onListingCreated callback in CreateListingDialog now directly writes to Firestore.
+  // This page will update in real-time due to the onSnapshot listener.
 
   return (
     <div className="space-y-6">
@@ -69,31 +79,37 @@ export default function MyListingsPage() {
           <h1 className="text-3xl font-bold tracking-tight">My Listings</h1>
           <p className="text-muted-foreground">Manage the subscriptions you are sharing.</p>
         </div>
-        <CreateListingDialog onListingCreated={handleNewListing}>
+        <CreateListingDialog>
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" /> Create New Listing
           </Button>
         </CreateListingDialog>
       </div>
 
-      {listings.length > 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      ) : listings.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {listings.map((listing) => (
             <Card key={listing.id} className="shadow-lg flex flex-col">
               <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                <Image src={listing.icon} alt={listing.serviceName} width={64} height={64} className="rounded-lg" data-ai-hint="app logo" />
+                <Image src={listing.iconUrl} alt={listing.serviceName} width={64} height={64} className="rounded-lg" data-ai-hint="app logo" />
                 <div className="flex-1">
                   <CardTitle className="text-xl">{listing.serviceName}</CardTitle>
                   <CardDescription>
                     {listing.spotsAvailable} of {listing.totalSpots} spots available
                   </CardDescription>
                 </div>
-                <Badge variant={listing.status === 'Active' ? 'default' : listing.status === 'Full' ? 'secondary' : 'outline'}
-                      className={
-                        listing.status === 'Active' ? 'bg-green-500/20 text-green-700 border-green-500/30' :
+                <Badge 
+                    variant={listing.status === 'Recruiting' ? 'default' : listing.status === 'Full' ? 'secondary' : 'outline'}
+                    className={
                         listing.status === 'Recruiting' ? 'bg-blue-500/20 text-blue-700 border-blue-500/30' :
+                        listing.status === 'Active' ? 'bg-green-500/20 text-green-700 border-green-500/30' :
                         listing.status === 'Full' ? 'bg-gray-500/20 text-gray-700 border-gray-500/30' : ''
-                      }>
+                    }
+                >
                   {listing.status}
                 </Badge>
               </CardHeader>
@@ -107,16 +123,13 @@ export default function MyListingsPage() {
               </CardContent>
               <CardFooter className="grid grid-cols-2 gap-2">
                  <Button variant="outline" asChild>
-                  <Link href={`/manage-group/${listing.groupId}`}>
+                  <Link href={`/manage-group/${listing.id}`}>
                     <Eye className="mr-2 h-4 w-4" /> Manage
                   </Link>
                 </Button>
                 <Button variant="secondary" onClick={() => console.log("TODO: Implement Edit for", listing.id)}>
                   <Edit3 className="mr-2 h-4 w-4" /> Edit
                 </Button>
-                 {/* <Button variant="destructive" size="sm" onClick={() => handleDeleteListing(listing.id)}>
-                    <Trash2 className="mr-2 h-3 w-3" /> Delete
-                </Button> */}
               </CardFooter>
             </Card>
           ))}
@@ -126,8 +139,7 @@ export default function MyListingsPage() {
           <CardContent className="p-8 text-center">
             <PlusCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold">No listings yet</h3>
-            <p className="text-muted-foreground mb-4">Start sharing a subscription by creating a new listing. Your active listings will appear here once fetched from the database.</p>
-            {/* The CreateListingDialog is triggered by the button in the header */}
+            <p className="text-muted-foreground mb-4">Start sharing a subscription by creating a new listing. Your active listings will appear here.</p>
           </CardContent>
         </Card>
       )}
