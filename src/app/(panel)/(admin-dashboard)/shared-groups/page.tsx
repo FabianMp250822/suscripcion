@@ -7,17 +7,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { db } from "@/lib/firebase/config";
-import { collection, onSnapshot, query, orderBy, Timestamp, type DocumentData } from "firebase/firestore";
-import { Loader2, ListX } from "lucide-react"; // Added ListX for empty state
+import { collection, onSnapshot, query, orderBy, Timestamp, type DocumentData, doc, updateDoc } from "firebase/firestore";
+import { Loader2, ListX, MoreHorizontal, Eye, AlertCircle, PlayCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+
+type ListingStatus = "Activo" | "Reclutando" | "Suspendido" | "Lleno" | "Desconocido";
 
 interface Group {
   id: string;
   name: string;
   service: string;
-  sharer: string;
+  sharerName: string; // Name of the SuscripGrupo user who listed it
+  sharerId: string; // UID of the SuscripGrupo user
   members: number;
   maxMembers: number;
-  status: string;
+  status: ListingStatus;
   created: string;
   icon: string;
 }
@@ -25,6 +31,7 @@ interface Group {
 export default function AdminSharedGroupsPage() {
   const [fetchedGroups, setFetchedGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -33,17 +40,18 @@ export default function AdminSharedGroupsPage() {
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const groupsData: Group[] = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data() as DocumentData;
+      querySnapshot.forEach((docSnapshot) => { // Renamed doc to docSnapshot to avoid conflict
+        const data = docSnapshot.data() as DocumentData;
         const createdAtTimestamp = data.createdAt as Timestamp;
         groupsData.push({
-          id: doc.id,
+          id: docSnapshot.id,
           name: data.serviceName || "N/A",
           service: data.serviceName || "N/A",
-          sharer: data.sharerName || "Desconocido",
+          sharerName: data.sharerName || "Desconocido",
+          sharerId: data.sharerId || "N/A",
           members: (data.totalSpots || 0) - (data.spotsAvailable || 0),
           maxMembers: data.totalSpots || 0,
-          status: data.status || "Desconocido",
+          status: data.status as ListingStatus || "Desconocido",
           created: createdAtTimestamp ? createdAtTimestamp.toDate().toLocaleDateString() : "N/A",
           icon: data.iconUrl || `https://placehold.co/40x40.png?text=${(data.serviceName || "S").substring(0,1)}`,
         });
@@ -52,28 +60,60 @@ export default function AdminSharedGroupsPage() {
       setLoading(false);
     }, (error) => {
       console.error("Error fetching shared groups: ", error);
-      // Consider adding a toast message for the user here
+      toast({
+        title: "Error al Cargar Grupos",
+        description: "No se pudieron obtener los datos de los grupos compartidos.",
+        variant: "destructive",
+      });
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: ListingStatus): string => {
     switch (status.toLowerCase()) {
-      case 'active':
       case 'activo':
         return 'bg-green-500/20 text-green-700 border-green-500/30';
-      case 'full':
-      case 'lleno':
-        return 'bg-gray-500/20 text-gray-700 border-gray-500/30';
-      case 'recruiting':
       case 'reclutando':
         return 'bg-blue-500/20 text-blue-700 border-blue-500/30';
+      case 'suspendido':
+        return 'bg-orange-500/20 text-orange-700 border-orange-500/30';
+      case 'lleno':
+        return 'bg-gray-500/20 text-gray-700 border-gray-500/30';
       default:
-        return 'secondary';
+        return 'bg-slate-500/20 text-slate-700 border-slate-500/30'; // For "Desconocido" or other
     }
   };
+
+  const handleViewDetails = (groupId: string) => {
+    console.log("Viewing details for group:", groupId);
+    // TODO: Implement modal or navigation to a detail page
+    toast({
+      title: "Acción Pendiente",
+      description: `La visualización de detalles para el grupo ${groupId} aún no está implementada.`,
+    });
+  };
+
+  const handleToggleListingStatus = async (listingId: string, currentStatus: ListingStatus) => {
+    const newStatus = (currentStatus === "Activo" || currentStatus === "Reclutando") ? "Suspendido" : "Activo";
+    const listingRef = doc(db, "listings", listingId);
+    try {
+      await updateDoc(listingRef, { status: newStatus });
+      toast({
+        title: "Estado de Publicación Actualizado",
+        description: `La publicación ${listingId} ha sido ${newStatus === "Suspendido" ? "suspendida" : "reactivada"}.`,
+      });
+    } catch (error) {
+      console.error("Error updating listing status: ", error);
+      toast({
+        title: "Error al Actualizar",
+        description: "No se pudo actualizar el estado de la publicación.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -84,7 +124,7 @@ export default function AdminSharedGroupsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Todos los Grupos Compartidos</CardTitle>
-          <CardDescription>Monitorea y gestiona todos los grupos compartidos activos y pendientes.</CardDescription>
+          <CardDescription>Monitorea y gestiona todos los grupos compartidos activos, pendientes y suspendidos.</CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -97,12 +137,12 @@ export default function AdminSharedGroupsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[60px]">Ícono</TableHead>
-                  <TableHead>Nombre del Grupo</TableHead>
-                  <TableHead>Servicio</TableHead>
-                  <TableHead>Propietario</TableHead>
+                  <TableHead>Nombre del Servicio</TableHead>
+                  <TableHead>Propietario (Sharer)</TableHead>
                   <TableHead>Miembros</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha de Creación</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -112,8 +152,7 @@ export default function AdminSharedGroupsPage() {
                       <Image src={group.icon} alt={group.service} width={32} height={32} className="rounded-sm" data-ai-hint="app logo" />
                     </TableCell>
                     <TableCell className="font-medium">{group.name}</TableCell>
-                    <TableCell>{group.service}</TableCell>
-                    <TableCell>{group.sharer}</TableCell>
+                    <TableCell>{group.sharerName} ({group.sharerId.substring(0,6)}...)</TableCell>
                     <TableCell>{group.members}/{group.maxMembers}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeVariant(group.status)}>
@@ -121,6 +160,32 @@ export default function AdminSharedGroupsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>{group.created}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <span className="sr-only">Abrir menú</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleViewDetails(group.id)}>
+                            <Eye className="mr-2 h-4 w-4" /> Ver Detalles
+                          </DropdownMenuItem>
+                          {(group.status === "Activo" || group.status === "Reclutando") && (
+                            <DropdownMenuItem onClick={() => handleToggleListingStatus(group.id, group.status)}>
+                              <AlertCircle className="mr-2 h-4 w-4 text-orange-600" /> Suspender Publicación
+                            </DropdownMenuItem>
+                          )}
+                          {group.status === "Suspendido" && (
+                            <DropdownMenuItem onClick={() => handleToggleListingStatus(group.id, group.status)}>
+                              <PlayCircle className="mr-2 h-4 w-4 text-green-600" /> Reactivar Publicación
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -137,3 +202,4 @@ export default function AdminSharedGroupsPage() {
     </div>
   );
 }
+
