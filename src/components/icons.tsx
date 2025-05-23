@@ -29,6 +29,12 @@ import {
   PanelLeft,
   MessageSquare, 
   Search, // Added for Browse Groups
+  HandCoins, // Added for Admin Payment Transactions
+  Filter, // Added for filtering
+  Eye, // For view details
+  Edit, // For edit actions
+  ReceiptText, // Alternative for payment history/transactions
+  ListFilter, // For filter button
 } from "lucide-react";
 
 export const Icons = {
@@ -41,7 +47,7 @@ export const Icons = {
   ManageGroup: Settings2,
   Earnings: DollarSign,
   MyActiveSubscriptions: CheckCircle,
-  PaymentHistory: History,
+  PaymentHistory: History, // Subscriber's own payment history
   Messages: MessageSquare, 
   Login: LogIn,
   Logout: LogOut,
@@ -55,7 +61,14 @@ export const Icons = {
   ChevronsLeft,
   ChevronsRight,
   PanelLeft,
-  BrowseGroups: Search, // Added for Browse Groups
+  BrowseGroups: Search, 
+  AdminPaymentTransactions: HandCoins, // For admin payment management
+  Filter,
+  Eye,
+  Edit,
+  ReceiptText,
+  ListFilter,
 };
 
 export type Icon = keyof typeof Icons;
+
