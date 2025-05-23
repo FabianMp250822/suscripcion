@@ -68,9 +68,9 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
       router.replace("/login");
     }
     if (!loading && user && pathname === "/login") {
-        if (isAdmin) router.replace("/users"); 
-        else if (isSharer) router.replace("/my-listings"); 
-        else router.replace("/browse-groups"); 
+        if (isAdmin) router.replace("/users");
+        else if (isSharer) router.replace("/my-listings");
+        else router.replace("/browse-groups");
     }
   }, [user, loading, router, pathname, isAdmin, isSharer]);
 
@@ -97,44 +97,42 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   const currentUserRoles: ("admin" | "sharer" | "subscriber")[] = [];
   if (isAdmin) {
     currentUserRoles.push("admin");
-  } else { 
+  } else {
     if (isSharer) {
       currentUserRoles.push("sharer");
     }
-    if (isSubscriber || (!isSharer && !isSubscriber)) { 
-      currentUserRoles.push("subscriber");
+    // A user can be a subscriber even if they are also a sharer, or if they are neither (default)
+    // Ensure subscriber role is added if they are not admin, and are either explicitly subscriber or don't have other specific non-admin roles
+    if (isSubscriber || (!isSharer && !isAdmin)) {
+       currentUserRoles.push("subscriber");
     }
   }
+   // Fallback for users who might not have roles set yet but are authenticated and not admin
   if (user && currentUserRoles.length === 0 && !isAdmin) {
     currentUserRoles.push("subscriber");
+    if (isSharer) currentUserRoles.push("sharer"); // ensure sharer is also added if applicable
   }
 
 
   const accessibleNavItems = navItems.filter(item => {
-    if (item.allowedRoles.length === 0) return true; 
+    if (item.allowedRoles.length === 0) return true;
     return item.allowedRoles.some(role => currentUserRoles.includes(role));
   });
-  
+
   const getActiveSegment = () => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 0) {
         if (segments[0] === 'manage-group' && segments.length > 1 && isSharer) {
-            return 'my-listings'; 
-        }
-        if (currentUserRoles.includes('admin') && segments.length > 0){
-            return segments[0];
+            return 'my-listings';
         }
         return segments[0];
     }
     return "";
   }
   const activeSegment = getActiveSegment();
-  
+
   const isLinkActive = (item: NavItem) => {
     if (item.segment) {
-      if (currentUserRoles.includes('admin') && pathname.startsWith(item.href)) {
-         return activeSegment === item.segment;
-      }
       return activeSegment === item.segment;
     }
     return pathname === item.href;
@@ -179,7 +177,7 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
       </Sidebar>
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 sm:px-6">
-          <div className="md:hidden"> 
+          <div className="md:hidden">
              <SidebarTrigger />
           </div>
           <div className="flex-1">
