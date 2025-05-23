@@ -1,17 +1,15 @@
 
-"use client"; // Add "use client" for useState and useEffect
+// Ensure no "use client"; directive is present
 
 import type { Metadata } from 'next';
-import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Users, DollarSign, ShieldCheck, MessageCircle, Search, CreditCard, Lock, Zap, Award } from 'lucide-react';
+import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap } from 'lucide-react';
 import { Icons } from '@/components/icons';
-import { useState, useEffect } from 'react'; // Import useState and useEffect
 
 // Define an interface for subscription data for type safety
 interface SubscriptionOffer {
@@ -73,12 +71,12 @@ export const metadata: Metadata = {
 const faqItems = [
   {
     question: "¿Cómo puedo compartir mi suscripción en SuscripGrupo?",
-    answer: "1. Publicas los detalles de tu suscripción de forma segura en nuestra plataforma. 2. Estableces el precio que deseas recibir por cupo. 3. Aceptas a los interesados y recibes el pago (menos una pequeña tarifa de servicio) directamente a través de nuestro sistema seguro.",
+    answer: "1. Publicas los detalles de tu suscripción de forma segura en nuestra plataforma. 2. Estableces el precio que deseas recibir por cupo. 3. Aceptas a los interesados y recibes el pago (menos una pequeña tarifa de servicio) directamente a través de nuestro sistema seguro vía Stripe.",
     value: "item-1",
   },
   {
     question: "¿Es seguro unirme a un grupo en SuscripGrupo?",
-    answer: "¡Sí! Priorizamos tu seguridad. Verificamos a los usuarios proveedores y tu pago está protegido. Ves el precio final, que incluye una tarifa de servicio transparente para SuscripGrupo. Nuestro sistema de arbitraje garantiza tu acceso durante todo el ciclo de pago.",
+    answer: "¡Sí! Priorizamos tu seguridad. Verificamos a los usuarios proveedores y tu pago está protegido vía Stripe. Ves el precio final, que incluye una tarifa de servicio transparente para SuscripGrupo. Nuestro sistema de arbitraje garantiza tu acceso durante todo el ciclo de pago.",
     value: "item-2",
   },
   {
@@ -94,27 +92,16 @@ const faqItems = [
 ];
 
 const trustPillars = [
-  { title: "Pagos Protegidos", description: "Utilizamos pasarelas de pago cifradas y seguras (Stripe) para proteger cada transacción.", icon: Lock },
+  { title: "Pagos Protegidos con Stripe", description: "Utilizamos pasarelas de pago cifradas y seguras (Stripe) para proteger cada transacción.", icon: Lock },
   { title: "Garantía de Acceso", description: "Nuestro sistema de arbitraje asegura tu acceso o te ayudamos a resolverlo.", icon: ShieldCheck },
   { title: "Comunidad Verificada", description: "Fomentamos un ambiente de confianza con perfiles de usuario claros.", icon: Users },
   { title: "Soporte Dedicado", description: "Nuestro equipo está aquí para ayudarte con cualquier consulta o disputa.", icon: MessageCircle },
 ];
 
+// popularSubscriptions array is intentionally empty as data will come from Firestore
+const popularSubscriptions: SubscriptionOffer[] = [];
+
 export default function LandingPage() {
-  const [popularSubscriptions, setPopularSubscriptions] = useState<SubscriptionOffer[]>([]);
-
-  useEffect(() => {
-    // TODO: Fetch popular subscriptions from Firestore
-    // Example:
-    // const fetchPopularSubscriptions = async () => {
-    //   // Firestore query logic here
-    //   // const fetchedData = await getDocs(collection(db, "listings").where("isPopular", "==", true).limit(4));
-    //   // setPopularSubscriptions(fetchedData.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubscriptionOffer)));
-    // };
-    // fetchPopularSubscriptions();
-  }, []);
-
-
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -162,7 +149,7 @@ export default function LandingPage() {
       "@type": "Country",
       "name": "Global" // Or specify countries
     },
-    "description": "Conecta con personas para compartir gastos de suscripciones a servicios digitales como Netflix, Spotify, y más, de forma segura y económica en SuscripGrupo.",
+    "description": "Conecta con personas para compartir gastos de suscripciones a servicios digitales como Netflix, Spotify, y más, de forma segura y económica en SuscripGrupo. Pagos procesados vía Stripe.",
     "name": "Compartir Suscripciones Digitales en SuscripGrupo"
   };
 
@@ -179,45 +166,12 @@ export default function LandingPage() {
     }))
   };
 
-  const productSchemaExample = popularSubscriptions.slice(0, 2).map(sub => ({ // Use popularSubscriptions state
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": `${sub.name} - ${sub.type} (Cupo en SuscripGrupo)`,
-    "description": `Acceso compartido para ${sub.name}. ${sub.availability}. Ofrecido en SuscripGrupo. Precio final, incluye tarifa de servicio.`,
-    "image": sub.icon,
-    "brand": {
-      "@type": "Brand",
-      "name": sub.name.split(" ")[0] // Extracts "Netflix" from "Netflix Premium"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": sub.price.toString(),
-      "priceCurrency": sub.currency,
-      "availability": sub.availability.toLowerCase().includes("sold out") ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
-      "seller": {
-        "@type": "Organization",
-        "name": "SuscripGrupo (Plataforma Intermediaria)"
-      }
-    },
-    "mainEntityOfPage": { 
-        "@type": "WebPage",
-        "@id": `https://suscripgrupo.example.com/browse-groups/${sub.id}` // Replace with actual group URL
-    }
-  }));
-
-
   return (
     <>
-      <Head>
-        {/* Structured Data Scripts */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema) }} />
-        {productSchemaExample.map((schema, index) => (
-          <script key={`product-schema-${index}`} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-        ))}
-      </Head>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema) }} />
 
       <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-400 via-blue-300 to-sky-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Hero Section */}
@@ -293,7 +247,7 @@ export default function LandingPage() {
                       <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>
                       <div className="mt-auto">
                         <p className="text-2xl font-bold text-primary mb-1">${sub.price.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-                        <p className="text-xs text-muted-foreground">(Precio final. Incluye tarifa de servicio. Desglose antes del pago.)</p>
+                        <p className="text-xs text-muted-foreground mt-1">(Incluye tarifa de servicio SuscripGrupo. Desglose antes del pago.)</p>
                         <Badge
                           variant={sub.availability.toLowerCase().includes("sold out") ? "destructive" : "default"}
                           className={`${sub.availability.toLowerCase().includes("sold out") ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
@@ -315,7 +269,8 @@ export default function LandingPage() {
             ) : (
               <div className="text-center py-10">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No hay suscripciones populares para mostrar en este momento. ¡Vuelve pronto!</p>
+                <p className="text-muted-foreground">No hay suscripciones populares para mostrar en este momento. ¡Vuelve pronto o explora todos los grupos!</p>
+                <p className="text-muted-foreground mt-2">// TODO: Implementar carga dinámica de suscripciones populares desde Firestore.</p>
               </div>
             )}
              <div className="text-center mt-12">
@@ -375,7 +330,6 @@ export default function LandingPage() {
                     <p className="text-muted-foreground mt-1">
                         Email: <a href="mailto:soporte@tecnolsalud.cloud" className="text-primary hover:underline">soporte@tecnolsalud.cloud</a>
                     </p>
-                    {/* <p className="text-muted-foreground mt-1">Dirección: 123 Calle Ficticia, Ciudad, País (Si aplica)</p> */}
                 </Card>
             </div>
         </section>
