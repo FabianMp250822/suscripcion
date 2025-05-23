@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 import { ShieldAlert, PlusCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase/config";
@@ -77,11 +78,12 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
   const [externalPassword, setExternalPassword] = useState("");
   const [desiredPricePerSlot, setDesiredPricePerSlot] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
+  const [listingDescription, setListingDescription] = useState(""); // New state for description
   const [confirm2FA, setConfirm2FA] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { user, userProfile } = useAuth(); // Changed from user to userProfile for sharerName and avatar
+  const { user, userProfile } = useAuth(); 
 
   const resetForm = () => {
     setSelectedPlatform("");
@@ -89,6 +91,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
     setExternalPassword("");
     setDesiredPricePerSlot("");
     setTotalSlots("");
+    setListingDescription(""); // Reset description
     setConfirm2FA(false);
   };
 
@@ -110,10 +113,10 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
       });
       return;
     }
-    if (!selectedPlatform || !externalUsername || !externalPassword || !desiredPricePerSlot || !totalSlots) {
+    if (!selectedPlatform || !externalUsername || !externalPassword || !desiredPricePerSlot || !totalSlots || !listingDescription) {
         toast({
             title: "Missing Fields",
-            description: "Please fill out all required fields.",
+            description: "Please fill out all required fields, including the description.",
             variant: "destructive",
         });
         return;
@@ -121,16 +124,19 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
 
     setIsSubmitting(true);
 
-    // For iconUrl, using a placeholder based on the first letter of the selected platform name
     const serviceInitial = selectedPlatform ? selectedPlatform.substring(0,1).toUpperCase() : 'S';
     const iconUrl = `https://placehold.co/64x64.png?text=${serviceInitial}`;
 
     const newListingData = {
       serviceName: selectedPlatform,
-      externalUsername: externalUsername, 
+      // IMPORTANT: In a real app, externalUsername & externalPassword should NOT be stored directly
+      // or even sent to Firestore from the client. They should be handled by a secure backend function.
+      // Omitting them here for security in this example.
+      // externalUsername: externalUsername, 
       pricePerSpot: parseFloat(desiredPricePerSlot), 
       totalSpots: parseInt(totalSlots),
       spotsAvailable: parseInt(totalSlots), 
+      listingDescription: listingDescription, // Add description to data
       sharerId: user.uid, 
       status: "Recruiting", 
       iconUrl: iconUrl, 
@@ -140,7 +146,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
       ownerReputation: null, 
       totalRatings: 0,
       isActive: true, 
-      popularity: Math.floor(Math.random() * 100), // Assign random popularity for now
+      popularity: Math.floor(Math.random() * 100), 
     };
 
     try {
@@ -230,6 +236,19 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
             <Input id="totalSlots" type="number" value={totalSlots} onChange={(e) => setTotalSlots(e.target.value)} placeholder="4" step="1" min="1" required />
           </div>
 
+          <div>
+            <Label htmlFor="listingDescription">Listing Description / Details for Participants</Label>
+            <Textarea 
+              id="listingDescription" 
+              value={listingDescription} 
+              onChange={(e) => setListingDescription(e.target.value)} 
+              placeholder="e.g., Max 2 devices simultaneously, no profile changes, respectful use, etc." 
+              rows={4}
+              required 
+            />
+            <p className="text-xs text-muted-foreground mt-1">Provide clear expectations for users joining your group.</p>
+          </div>
+
           <div className="items-top flex space-x-2 mt-4 border p-3 rounded-md bg-blue-50 border-blue-300">
             <Checkbox id="confirm2FA" checked={confirm2FA} onCheckedChange={(checked) => setConfirm2FA(!!checked)} />
             <div className="grid gap-1.5 leading-none">
@@ -242,11 +261,11 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
             </div>
           </div>
 
-          <DialogFooter className="pt-4 sticky bottom-0 bg-background pb-1 z-10"> {/* Ensure footer is visible and has z-index */}
+          <DialogFooter className="pt-4 sticky bottom-0 bg-background pb-1 z-10">
             <DialogClose asChild>
                 <Button type="button" variant="outline" disabled={isSubmitting}>Cancel</Button>
             </DialogClose>
-            <Button type="submit" disabled={isSubmitting || !user || !confirm2FA || !selectedPlatform}>
+            <Button type="submit" disabled={isSubmitting || !user || !confirm2FA || !selectedPlatform || !listingDescription}>
                 {isSubmitting ? (
                   <>
                     <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />

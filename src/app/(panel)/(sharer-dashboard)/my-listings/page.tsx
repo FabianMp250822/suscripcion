@@ -21,10 +21,11 @@ interface Listing {
   spotsAvailable: number;
   totalSpots: number;
   pricePerSpot: number; // Sharer's desired price
+  listingDescription?: string; // Added description
   status: string;
   iconUrl: string;
-  sharerId?: string; // Added for query
-  createdAt?: Timestamp; // Firestore Timestamp
+  sharerId?: string; 
+  createdAt?: Timestamp; 
 }
 
 export default function MyListingsPage() {
@@ -36,14 +37,11 @@ export default function MyListingsPage() {
   useEffect(() => {
     if (!user) {
       setLoading(false);
-      // Optionally, redirect to login or show a message
-      // console.log("User not logged in, cannot fetch listings.");
       return;
     }
 
     setLoading(true);
     const listingsRef = collection(db, "listings");
-    // Query for listings where sharerId is the current user's UID
     const q = query(
       listingsRef,
       where("sharerId", "==", user.uid),
@@ -59,7 +57,8 @@ export default function MyListingsPage() {
           serviceName: data.serviceName || "N/A",
           spotsAvailable: data.spotsAvailable || 0,
           totalSpots: data.totalSpots || 0,
-          pricePerSpot: data.pricePerSpot || 0, // Default to 0 if undefined
+          pricePerSpot: data.pricePerSpot || 0, 
+          listingDescription: data.listingDescription || "", // Get description
           status: data.status || "Unknown",
           iconUrl: data.iconUrl || `https://placehold.co/64x64.png?text=${(data.serviceName || "S").substring(0,1)}`,
           sharerId: data.sharerId,
@@ -78,7 +77,7 @@ export default function MyListingsPage() {
       setLoading(false);
     });
 
-    return () => unsubscribe(); // Cleanup subscription on unmount
+    return () => unsubscribe(); 
   }, [user, toast]);
 
 
@@ -126,6 +125,11 @@ export default function MyListingsPage() {
               <CardContent className="flex-1">
                 <p className="text-2xl font-semibold">${(listing.pricePerSpot ?? 0).toFixed(2)} <span className="text-sm text-muted-foreground">/ desired per spot / month</span></p>
                 <p className="text-xs text-muted-foreground mt-1"> (Subscribers will see a final price including a service fee)</p>
+                {listing.listingDescription && (
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-3" title={listing.listingDescription}>
+                    <strong>Details:</strong> {listing.listingDescription}
+                  </p>
+                )}
                 <div className="mt-2 flex items-center text-sm text-muted-foreground">
                   <Users className="mr-1 h-4 w-4" />
                   <span>{listing.totalSpots - listing.spotsAvailable} members joined</span>

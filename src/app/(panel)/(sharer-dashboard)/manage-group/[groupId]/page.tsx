@@ -8,12 +8,13 @@ import { Users, CheckCircle, XCircle, MessageSquare, DollarSign, MoreHorizontal 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
 
-// Mock data
+// Mock data - TODO: Fetch this data dynamically based on params.groupId
 const groupDetails = {
   id: "g1",
   name: "Netflix Premium Shared",
   serviceIcon: "https://placehold.co/64x64.png?text=N",
   sharer: "Your Name Here",
+  listingDescription: "This is a shared Netflix group. Please use only one profile and do not change the password. Respectful use is expected. Payment due on the 1st of each month.",
   totalSpots: 5,
   filledSpots: 3,
   pricePerSpot: 7.99,
@@ -23,8 +24,7 @@ const members = [
   { id: "m1", name: "John Doe", email: "john@example.com", joinedDate: "2023-08-01", paymentStatus: "Paid", avatar: "https://placehold.co/40x40.png?text=JD" },
   { id: "m2", name: "Jane Smith", email: "jane@example.com", joinedDate: "2023-08-05", paymentStatus: "Pending", avatar: "https://placehold.co/40x40.png?text=JS" },
   { id: "m3", name: "Mike Johnson", email: "mike@example.com", joinedDate: "2023-08-10", paymentStatus: "Paid", avatar: "https://placehold.co/40x40.png?text=MJ" },
-  { id: "m4", name: "Pending User", email: "N/A", joinedDate: "N/A", paymentStatus: "N/A", avatar: "https://placehold.co/40x40.png?text=?" },
-  { id: "m5", name: "Pending User", email: "N/A", joinedDate: "N/A", paymentStatus: "N/A", avatar: "https://placehold.co/40x40.png?text=?" },
+  // Empty spots are generated dynamically below based on totalSpots - filledSpots
 ];
 
 export default function ManageGroupPage({ params }: { params: { groupId: string } }) {
@@ -32,7 +32,7 @@ export default function ManageGroupPage({ params }: { params: { groupId: string 
   return (
     <div className="space-y-6">
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-row items-center gap-4">
+        <CardHeader className="flex flex-row items-start gap-4">
           <Image src={groupDetails.serviceIcon} alt={groupDetails.name} width={64} height={64} className="rounded-lg" data-ai-hint="app logo" />
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Manage Group: {groupDetails.name}</h1>
@@ -40,28 +40,38 @@ export default function ManageGroupPage({ params }: { params: { groupId: string 
             <p className="text-sm text-muted-foreground">Shared by: {groupDetails.sharer}</p>
           </div>
         </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-4">
-          <div className="flex items-center space-x-3 rounded-md border p-4">
-            <Users className="h-6 w-6 text-primary" />
-            <div>
-              <p className="text-sm font-medium">Members</p>
-              <p className="text-lg font-semibold">{groupDetails.filledSpots} / {groupDetails.totalSpots}</p>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="flex items-center space-x-3 rounded-md border p-4">
+              <Users className="h-6 w-6 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Members</p>
+                <p className="text-lg font-semibold">{groupDetails.filledSpots} / {groupDetails.totalSpots}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3 rounded-md border p-4">
+              <DollarSign className="h-6 w-6 text-green-500" />
+              <div>
+                <p className="text-sm font-medium">Price per Spot</p>
+                <p className="text-lg font-semibold">${groupDetails.pricePerSpot.toFixed(2)}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3 rounded-md border p-4">
+              <CheckCircle className="h-6 w-6 text-accent" />
+              <div>
+                <p className="text-sm font-medium">Group Status</p>
+                <p className="text-lg font-semibold">{groupDetails.filledSpots === groupDetails.totalSpots ? "Full" : "Recruiting"}</p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3 rounded-md border p-4">
-            <DollarSign className="h-6 w-6 text-green-500" />
-            <div>
-              <p className="text-sm font-medium">Price per Spot</p>
-              <p className="text-lg font-semibold">${groupDetails.pricePerSpot.toFixed(2)}</p>
+          {groupDetails.listingDescription && (
+            <div className="pt-4">
+              <h3 className="text-md font-semibold mb-1">Listing Details/Expectations:</h3>
+              <p className="text-sm text-muted-foreground p-3 border rounded-md bg-muted/30 whitespace-pre-wrap">
+                {groupDetails.listingDescription}
+              </p>
             </div>
-          </div>
-          <div className="flex items-center space-x-3 rounded-md border p-4">
-            <CheckCircle className="h-6 w-6 text-accent" />
-            <div>
-              <p className="text-sm font-medium">Group Status</p>
-              <p className="text-lg font-semibold">{groupDetails.filledSpots === groupDetails.totalSpots ? "Full" : "Recruiting"}</p>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
@@ -83,7 +93,7 @@ export default function ManageGroupPage({ params }: { params: { groupId: string 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {members.slice(0, groupDetails.filledSpots).map((member) => ( // Show actual members
+              {members.slice(0, groupDetails.filledSpots).map((member) => ( 
                 <TableRow key={member.id}>
                   <TableCell>
                     <Avatar>
@@ -123,7 +133,7 @@ export default function ManageGroupPage({ params }: { params: { groupId: string 
                   </TableCell>
                 </TableRow>
               ))}
-              {Array.from({ length: groupDetails.totalSpots - groupDetails.filledSpots }).map((_, index) => ( // Show empty spots
+              {Array.from({ length: groupDetails.totalSpots - groupDetails.filledSpots }).map((_, index) => ( 
                 <TableRow key={`empty-${index}`}>
                   <TableCell>
                     <Avatar>

@@ -12,22 +12,23 @@ import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, orderBy, limit, getDocs, type DocumentData, Timestamp } from "firebase/firestore";
-import { useAuth } from "@/hooks/use-auth"; // Import useAuth
+import { useAuth } from "@/hooks/use-auth"; 
 
 interface GroupListing {
   id: string;
   serviceName: string;
   spotsAvailable: number;
   totalSpots: number;
-  pricePerSpot: number; // FINAL PRICE for subscriber
-  status: string; // e.g., "Recruiting", "Full"
+  pricePerSpot: number; 
+  listingDescription?: string; // Added description
+  status: string; 
   iconUrl: string;
   sharerName?: string;
   sharerAvatar?: string;
   ownerReputation?: number;
   totalRatings?: number;
   createdAt?: Timestamp;
-  sharerId?: string; // Added to identify the owner of the listing
+  sharerId?: string; 
 }
 
 const StarRating = ({ rating, totalRatings }: { rating?: number; totalRatings?: number }) => {
@@ -57,21 +58,19 @@ export default function BrowseGroupsPage() {
   const [availableGroups, setAvailableGroups] = useState<GroupListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const { user } = useAuth(); // Get current user
+  const { user } = useAuth(); 
 
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true);
       try {
         const listingsRef = collection(db, "listings");
-        // Fetch all listings, filtering can be done client-side or by more specific queries later
-        // For now, we fetch active ones or those with spots
         const q = query(
           listingsRef,
-          where("spotsAvailable", ">", 0), // Example: only show groups with spots
-          // orderBy("ownerReputation", "desc"), // Keep if ownerReputation is reliably present
-          orderBy("createdAt", "desc"),
-          limit(50) // Increased limit to ensure user's own listings are likely fetched
+          where("spotsAvailable", ">", 0), 
+          orderBy("createdAt", "desc"), // Fallback sort
+          // Consider adding orderBy("ownerReputation", "desc") if the field is reliable
+          limit(50) 
         );
         
         const querySnapshot = await getDocs(q);
@@ -79,7 +78,7 @@ export default function BrowseGroupsPage() {
         querySnapshot.forEach((doc) => {
           const data = doc.data() as DocumentData;
           const sharerPrice = data.pricePerSpot || 0;
-          const serviceFeePercentage = 0.15; // Example 15% service fee
+          const serviceFeePercentage = 0.15; 
           const serviceFee = sharerPrice * serviceFeePercentage; 
           const finalPrice = sharerPrice + serviceFee;
 
@@ -89,6 +88,7 @@ export default function BrowseGroupsPage() {
             spotsAvailable: data.spotsAvailable || 0,
             totalSpots: data.totalSpots || 0,
             pricePerSpot: finalPrice,
+            listingDescription: data.listingDescription || "", // Get description
             status: data.status || "Unknown",
             iconUrl: data.iconUrl || `https://placehold.co/64x64.png?text=${(data.serviceName || "S").substring(0,1)}`,
             sharerName: data.sharerName || "Usuario",
@@ -96,7 +96,7 @@ export default function BrowseGroupsPage() {
             ownerReputation: data.ownerReputation,
             totalRatings: data.totalRatings,
             createdAt: data.createdAt,
-            sharerId: data.sharerId, // Ensure sharerId is fetched
+            sharerId: data.sharerId, 
           } as GroupListing);
         });
         setAvailableGroups(fetchedListings);
@@ -178,6 +178,11 @@ export default function BrowseGroupsPage() {
                 <CardContent className="flex-1">
                   <p className="text-2xl font-semibold">${(group.pricePerSpot ?? 0).toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
                   <p className="text-xs text-muted-foreground mt-1">(Final price. Includes SuscripGrupo service fee. Breakdown shown before payment.)</p>
+                  {group.listingDescription && (
+                    <p className="text-sm text-muted-foreground mt-2 line-clamp-3" title={group.listingDescription}>
+                      <strong>Details:</strong> {group.listingDescription}
+                    </p>
+                  )}
                   <div className="mt-2 flex items-center text-sm text-muted-foreground">
                     <Users className="mr-1 h-4 w-4" />
                     <span>{group.totalSpots - group.spotsAvailable} / {group.totalSpots} members</span>
@@ -190,7 +195,7 @@ export default function BrowseGroupsPage() {
                 <CardFooter>
                   <Button 
                     className="w-full" 
-                    disabled={buttonDisabled} 
+                    disabled={buttonDisabled && !isOwnListing} // Keep enabled for own listing to manage
                     asChild
                     variant={isOwnListing ? "outline" : "default"}
                   >
@@ -216,4 +221,3 @@ export default function BrowseGroupsPage() {
     </div>
   );
 }
-
