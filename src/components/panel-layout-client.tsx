@@ -93,9 +93,19 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   }
 
   const currentUserRoles: ("admin" | "sharer" | "subscriber")[] = [];
-  if (isAdmin) currentUserRoles.push("admin");
-  if (isSharer) currentUserRoles.push("sharer");
-  currentUserRoles.push("subscriber"); 
+  if (isAdmin) {
+    currentUserRoles.push("admin");
+  } else {
+    // For non-admins:
+    // AuthContext sets isSharer if the 'sharer' role exists.
+    // AuthContext sets isSubscriber if 'subscriber' role exists, or if 'sharer' role exists, or if no specific roles (defaults to subscriber).
+    if (isSharer) {
+      currentUserRoles.push("sharer");
+    }
+    if (isSubscriber) { // This will be true for all non-admin users.
+      currentUserRoles.push("subscriber");
+    }
+  }
 
 
   const accessibleNavItems = navItems.filter(item =>
