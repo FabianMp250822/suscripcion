@@ -1,18 +1,21 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle, UserPlus } from "lucide-react";
+import { MoreHorizontal, UserPlus } from "lucide-react";
 import Image from "next/image";
 
 // Mock data - replace with actual data fetching
 const users = [
-  { id: "1", name: "Alice Wonderland", email: "alice@example.com", role: "Subscriber", status: "Active", joined: "2023-01-15", avatar: "https://placehold.co/40x40.png?text=AW" },
-  { id: "2", name: "Bob The Builder", email: "bob@example.com", role: "Sharer", status: "Active", joined: "2023-02-20", avatar: "https://placehold.co/40x40.png?text=BB" },
-  { id: "3", name: "Charlie Chaplin", email: "charlie@example.com", role: "Admin", status: "Active", joined: "2023-03-10", avatar: "https://placehold.co/40x40.png?text=CC" },
+  { id: "1", name: "Alice Wonderland", email: "subscriber.alice@example.com", role: "Subscriber", status: "Active", joined: "2023-01-15", avatar: "https://placehold.co/40x40.png?text=AW" },
+  { id: "2", name: "Bob The Builder", email: "sharer.bob@example.com", role: "Sharer", status: "Active", joined: "2023-02-20", avatar: "https://placehold.co/40x40.png?text=BB" },
+  { id: "3", name: "Charlie Chaplin", email: "admin.charlie@example.com", role: "Admin", status: "Active", joined: "2023-03-10", avatar: "https://placehold.co/40x40.png?text=CC" },
   { id: "4", name: "Diana Prince", email: "diana@example.com", role: "Subscriber", status: "Inactive", joined: "2023-04-05", avatar: "https://placehold.co/40x40.png?text=DP" },
-  { id: "5", name: "Edward Elric", email: "edward@example.com", role: "Sharer", status: "Pending", joined: "2023-05-12", avatar: "https://placehold.co/40x40.png?text=EE" },
+  { id: "5", name: "Edward Elric", email: "sharer.edward@example.com", role: "Sharer", status: "Pending", joined: "2023-05-12", avatar: "https://placehold.co/40x40.png?text=EE" },
+  { id: "6", name: "Sam Stone", email: "sharer.subscriber.sam@example.com", role: "Sharer, Subscriber", status: "Active", joined: "2023-06-01", avatar: "https://placehold.co/40x40.png?text=SS" },
+  { id: "7", name: "Sue Smith", email: "subscriber.sue@example.com", role: "Subscriber", status: "Active", joined: "2023-06-05", avatar: "https://placehold.co/40x40.png?text=SUE" },
 ];
 
 export default function UsersPage() {
@@ -61,7 +64,10 @@ export default function UsersPage() {
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge variant={user.role === 'Admin' ? 'default' : user.role === 'Sharer' ? 'secondary' : 'outline'}>
+                    <Badge 
+                      variant={user.role.includes('Admin') ? 'default' : user.role.includes('Sharer') ? 'secondary' : 'outline'}
+                      className={user.role.includes('Admin') ? '' : user.role.includes('Sharer') && user.role.includes('Subscriber') ? 'bg-purple-500/20 text-purple-700 border-purple-500/30' : user.role.includes('Sharer') ? '' : '' }
+                    >
                       {user.role}
                     </Badge>
                   </TableCell>

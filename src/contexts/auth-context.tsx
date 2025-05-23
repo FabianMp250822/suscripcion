@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton"; // For loading state
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  isAdmin: boolean; // Example role, expand as needed
+  isAdmin: boolean;
   isSharer: boolean;
   isSubscriber: boolean;
 }
@@ -25,7 +25,6 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  // Placeholder role logic, replace with actual role determination from user claims or Firestore
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSharer, setIsSharer] = useState(false);
   const [isSubscriber, setIsSubscriber] = useState(false);
@@ -34,21 +33,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Simulate role fetching, replace with actual logic
-        // For example, check custom claims or a user document in Firestore
-        // This is a simplified example
-        if (currentUser.email?.includes('admin')) {
-          setIsAdmin(true);
-          setIsSharer(false);
-          setIsSubscriber(false);
-        } else if (currentUser.email?.includes('sharer')) {
-          setIsAdmin(false);
-          setIsSharer(true);
-          setIsSubscriber(false);
+        const email = currentUser.email || "";
+        const isAdminUser = email.includes('admin');
+        const isSharerUser = email.includes('sharer');
+        const isSubscriberUser = email.includes('subscriber');
+
+        setIsAdmin(isAdminUser);
+        if (isAdminUser) {
+            setIsSharer(false);
+            setIsSubscriber(false);
         } else {
-          setIsAdmin(false);
-          setIsSharer(false);
-          setIsSubscriber(true);
+            setIsSharer(isSharerUser);
+            // A user is a subscriber if their email includes 'subscriber'
+            // OR if they are not a sharer and not an admin (default role for simple emails)
+            setIsSubscriber(isSubscriberUser || (!isSharerUser && !isAdminUser));
         }
       } else {
         setIsAdmin(false);
@@ -61,10 +59,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   if (loading) {
-    // You can render a global loading spinner here if desired
-    // For now, we render children immediately or a simple loader.
-    // This loading state is primarily for the AuthProvider itself.
-    // Page-level loading should be handled by Suspense or similar.
     return (
       <div className="flex items-center justify-center h-screen">
         <Skeleton className="h-12 w-12 rounded-full" />

@@ -1,3 +1,4 @@
+
 import type { LucideProps } from "lucide-react";
 import {
   Users,
@@ -26,6 +27,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   PanelLeft,
+  MessageSquare, // Added for Messages
 } from "lucide-react";
 
 export const Icons = {
@@ -39,6 +41,7 @@ export const Icons = {
   Earnings: DollarSign,
   MyActiveSubscriptions: CheckCircle,
   PaymentHistory: History,
+  Messages: MessageSquare, // Added for Messages
   Login: LogIn,
   Logout: LogOut,
   Moon,

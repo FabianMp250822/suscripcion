@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { ReactNode } from "react";
@@ -41,11 +42,12 @@ const navItems: NavItem[] = [
   { href: "/settings", label: "Admin Settings", icon: Icons.Settings, allowedRoles: ["admin"], segment: "settings" },
   // Sharer
   { href: "/my-listings", label: "My Listings", icon: Icons.MyListings, allowedRoles: ["sharer"], segment: "my-listings" },
-  // manage-group/[groupId] is dynamic, handled separately or linked from My Listings
   { href: "/earnings", label: "Earnings", icon: Icons.Earnings, allowedRoles: ["sharer"], segment: "earnings" },
   // Subscriber
   { href: "/my-active-subscriptions", label: "Active Subscriptions", icon: Icons.MyActiveSubscriptions, allowedRoles: ["subscriber"], segment: "my-active-subscriptions"},
   { href: "/payment-history", label: "Payment History", icon: Icons.PaymentHistory, allowedRoles: ["subscriber"], segment: "payment-history" },
+  // All logged-in users
+  { href: "/messages", label: "Messages", icon: Icons.Messages, allowedRoles: ["admin", "sharer", "subscriber"], segment: "messages"},
 ];
 
 interface PanelLayoutClientProps {
@@ -99,15 +101,30 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   
   const getActiveSegment = () => {
     const segments = pathname.split('/').filter(Boolean);
-    // For admin-dashboard, sharer-dashboard, subscriber-dashboard layouts
-    // the relevant segment might be the one after the dashboard type.
-    // Example: /users -> users, /my-listings -> my-listings
     if (segments.length > 0) {
-        return segments[0]; // This might need adjustment based on final routing structure
+        // Handles cases like /manage-group/g1 by taking 'manage-group' or specific page like 'users'
+        if (segments[0] === 'manage-group' && segments.length > 1) {
+            return segments[0]; 
+        }
+        return segments[0];
     }
     return "";
   }
   const activeSegment = getActiveSegment();
+  
+  const isLinkActive = (item: NavItem) => {
+    if (item.segment) {
+      // For dynamic routes like /manage-group/[groupId], we might want to highlight "My Listings" or a "Manage Group" parent.
+      // This example checks if the current path starts with the item's segment.
+      // Or if it's a specific page like /manage-group, it should match `manage-group`.
+      if (item.segment === 'my-listings' && pathname.startsWith('/manage-group')) {
+        return true; // Highlight "My Listings" when on a manage-group page.
+      }
+      return activeSegment === item.segment;
+    }
+    return pathname === item.href;
+  };
+
 
   return (
     <SidebarProvider defaultOpen>
@@ -128,7 +145,7 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
                 <Link href={item.href} legacyBehavior passHref>
                   <SidebarMenuButton
                     asChild
-                    isActive={item.segment ? activeSegment === item.segment : pathname === item.href}
+                    isActive={isLinkActive(item)}
                     tooltip={{ children: item.label, side: "right", align: "center" }}
                   >
                     <a>
