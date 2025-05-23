@@ -17,6 +17,7 @@ const users = [
   { id: "6", name: "Sam Stone", email: "sharer.subscriber.sam@example.com", role: "Sharer, Subscriber", status: "Active", joined: "2023-06-01", avatar: "https://placehold.co/40x40.png?text=SS" },
   { id: "7", name: "Sue Smith", email: "subscriber.sue@example.com", role: "Subscriber", status: "Active", joined: "2023-06-05", avatar: "https://placehold.co/40x40.png?text=SUE" },
   { id: "8", name: "Suspended User", email: "suspended.user@example.com", role: "Subscriber", status: "Suspended", joined: "2023-01-01", avatar: "https://placehold.co/40x40.png?text=SU" },
+  { id: "9", name: "Arthur Pendragon", email: "admin.arthur@example.com", role: "Admin", status: "Active", joined: "2023-07-01", avatar: "https://placehold.co/40x40.png?text=AP" },
 ];
 
 export default function UsersPage() {
