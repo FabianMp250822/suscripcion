@@ -1,15 +1,15 @@
 
-"use client";
+"use client"; // This page needs to be a client component to fetch data client-side
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
-import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap, Star } from 'lucide-react';
+import { Badge } from '@/components/ui/badge'; // Ensure Badge is imported
+import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap } from 'lucide-react';
 import { Icons } from '@/components/icons';
+import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, query, where, orderBy, limit, getDocs, type FirestoreError } from 'firebase/firestore';
 
@@ -18,7 +18,7 @@ interface SubscriptionOffer {
   id: string;
   serviceName: string;
   type?: string;
-  pricePerSpot: number; // Final price shown to subscriber
+  pricePerSpot: number;
   currency?: string;
   spotsAvailable: number;
   totalSpots: number;
@@ -67,51 +67,87 @@ export default function LandingPage() {
       console.log("Attempting to fetch popular subscriptions...");
       setLoading(true);
       setFetchError(null);
+      let fetchedSubscriptions: SubscriptionOffer[] = [];
+
       try {
-        const listingsRef = collection(db, "listings");
-        const q = query(
-          listingsRef,
+        // Primary query for "popular" subscriptions
+        const primaryListingsRef = collection(db, "listings");
+        const qPrimary = query(
+          primaryListingsRef,
           where("isActive", "==", true),
           orderBy("popularity", "desc"),
           limit(8)
         );
 
-        console.log("Firestore query:", q);
-        const querySnapshot = await getDocs(q);
-        console.log('Query snapshot:', querySnapshot);
-        console.log('Number of documents fetched:', querySnapshot.size);
+        console.log("Firestore primary query:", qPrimary);
+        const primaryQuerySnapshot = await getDocs(qPrimary);
+        console.log('Primary query snapshot:', primaryQuerySnapshot);
+        console.log('Number of documents fetched by primary query:', primaryQuerySnapshot.size);
 
-        const fetchedSubscriptions: SubscriptionOffer[] = [];
-        querySnapshot.forEach((doc) => {
+        primaryQuerySnapshot.forEach((doc) => {
           const data = doc.data();
-          console.log('Processing document ID:', doc.id, 'Data:', data);
+          console.log('Processing document ID (primary):', doc.id, 'Data:', data);
           fetchedSubscriptions.push({
             id: doc.id,
             serviceName: data.serviceName || "Unknown Service",
-            pricePerSpot: data.pricePerSpot || 0,
+            pricePerSpot: data.pricePerSpot || 0, // This is the final price for subscribers
             spotsAvailable: data.spotsAvailable || 0,
             totalSpots: data.totalSpots || 0,
             iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${(data.serviceName || "S").substring(0,1)}`,
-            status: data.status || "Unknown",
+            status: data.status || "Unknown", // e.g. "Recruiting", "Full"
             type: data.type,
             currency: data.currency,
             dataAiHint: data.dataAiHint || data.serviceName?.toLowerCase().split(" ").slice(0,2).join(" ") || "service logo",
           });
         });
-        setPopularSubscriptions(fetchedSubscriptions);
+
+        // Fallback query if primary query returns no results
         if (fetchedSubscriptions.length === 0) {
-          console.log("No popular subscriptions found matching criteria (isActive: true, ordered by popularity). Check Firestore data and indexes.");
+          console.log("Primary query returned 0 results. Attempting fallback query...");
+          const fallbackListingsRef = collection(db, "listings");
+          // A simple fallback: fetch any 2 listings. You might want to add `where("isActive", "==", true)` here too,
+          // or a different ordering like `orderBy("createdAt", "desc")`.
+          const qFallback = query(fallbackListingsRef, limit(2));
+          
+          console.log("Firestore fallback query:", qFallback);
+          const fallbackQuerySnapshot = await getDocs(qFallback);
+          console.log('Fallback query snapshot:', fallbackQuerySnapshot);
+          console.log('Number of documents fetched by fallback query:', fallbackQuerySnapshot.size);
+
+          fallbackQuerySnapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log('Processing document ID (fallback):', doc.id, 'Data:', data);
+            fetchedSubscriptions.push({
+              id: doc.id,
+              serviceName: data.serviceName || "Unknown Service",
+              pricePerSpot: data.pricePerSpot || 0,
+              spotsAvailable: data.spotsAvailable || 0,
+              totalSpots: data.totalSpots || 0,
+              iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${(data.serviceName || "S").substring(0,1)}`,
+              status: data.status || "Unknown",
+              type: data.type,
+              currency: data.currency,
+              dataAiHint: data.dataAiHint || data.serviceName?.toLowerCase().split(" ").slice(0,2).join(" ") || "service logo",
+            });
+          });
         }
+        
+        setPopularSubscriptions(fetchedSubscriptions);
+
+        if (fetchedSubscriptions.length === 0) {
+          console.log("No subscriptions found by primary or fallback queries. Check Firestore data and indexes.");
+        }
+
       } catch (error) {
         const firebaseError = error as FirestoreError;
         console.error("Error fetching popular subscriptions from Firestore:", firebaseError);
         let userErrorMessage = "No se pudieron cargar las suscripciones populares. Inténtalo de nuevo más tarde.";
         if (firebaseError.code === 'permission-denied') {
-          console.warn("Firestore permission denied. Ensure security rules allow public reads for 'listings'.");
+          console.warn("Firestore permission denied. Ensure security rules allow public reads for 'listings' collection. Current rules might require authentication.");
           userErrorMessage = "Error de permisos al cargar suscripciones. Contacta al soporte.";
         } else if (firebaseError.code === 'failed-precondition') {
-           console.warn("Firestore query failed due to missing index. Please create the required composite index in your Firebase console for the 'listings' collection involving 'isActive' (boolean) and 'popularity' (number, descending). The error message from Firebase should contain a link to create it.");
-           userErrorMessage = "Error de configuración de base deatos. Es posible que falte un índice. Revisa la consola para más detalles o contacta al soporte.";
+           console.warn("Firestore query failed due to missing index. Please create the required composite index in your Firebase console for the 'listings' collection (e.g., for 'isActive' and 'popularity'). The error message from Firebase should contain a link to create it.");
+           userErrorMessage = "Error de configuración de base de datos. Es posible que falte un índice. Revisa la consola para más detalles o contacta al soporte.";
         }
         setFetchError(userErrorMessage);
       } finally {
@@ -123,20 +159,19 @@ export default function LandingPage() {
     fetchPopularSubscriptions();
   }, []);
 
-  // Schema.org structured data
+  // Schema.org structured data (Simplified as dynamic generation for Products is complex client-side for SEO)
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "SuscripGrupo",
     "url": "https://suscripgrupo.example.com", // Replace with your actual URL
     "logo": "https://suscripgrupo.example.com/logo.png", // Replace with your actual logo URL
-    "parentOrganization": {
+     "parentOrganization": {
         "@type": "Organization",
         "name": "tecnosalud internacional"
     },
     "contactPoint": {
       "@type": "ContactPoint",
-      "telephone": "+1-XXX-XXX-XXXX", // Optional
       "contactType": "Customer Support",
       "email": "soporte@tecnolsalud.cloud"
     },
@@ -165,12 +200,12 @@ export default function LandingPage() {
     },
     "areaServed": {
       "@type": "Country",
-      "name": "Global"
+      "name": "Global" 
     },
     "description": "Conecta con personas para compartir gastos de suscripciones a servicios digitales como Netflix, Spotify, y más, de forma segura y económica en SuscripGrupo. Pagos procesados vía Stripe.",
     "name": "Compartir Suscripciones Digitales en SuscripGrupo"
   };
-
+  
   const faqPageSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -184,6 +219,7 @@ export default function LandingPage() {
     }))
   };
 
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }} />
@@ -191,12 +227,12 @@ export default function LandingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageSchema) }} />
 
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-400 via-blue-300 to-sky-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-500 via-blue-400 to-sky-300 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Hero Section */}
         <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080/41a7fc/FFFFFF?text=Servicios+Digitales')" }} data-ai-hint="digital services collage abstract">
-          <div className="container mx-auto px-4 bg-black/40 dark:bg-black/60 py-10 rounded-xl backdrop-blur-sm">
+          <div className="container mx-auto px-4 bg-black/50 dark:bg-black/70 py-10 rounded-xl backdrop-blur-sm">
             <Link href="/" className="inline-block mx-auto mb-6">
-              <Icons.Logo className="h-20 w-20 text-primary transition-transform duration-300 hover:scale-110" />
+               <Icons.Logo className="h-20 w-20 text-primary transition-transform duration-300 hover:scale-110" />
             </Link>
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-white mb-6 leading-tight">
               SuscripGrupo: Plataforma para Compartir Suscripciones y <span className="text-primary">Dividir Gastos</span> de Forma Segura
@@ -277,16 +313,16 @@ export default function LandingPage() {
                       <div className="mt-auto">
                         <p className="text-2xl font-bold text-primary mb-1">${sub.pricePerSpot.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
                         <p className="text-xs text-muted-foreground mt-1">(Incluye tarifa de servicio SuscripGrupo. Desglose antes del pago. Pagos vía Stripe)</p>
-                        <Badge
+                        <Badge 
                           variant={sub.status === "Full" || sub.spotsAvailable === 0 ? "destructive" : "default"}
                           className={`${sub.status === "Full" || sub.spotsAvailable === 0 ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
                         >
-                          {sub.status === "Full" || sub.spotsAvailable === 0 ? "Agotado" : `${sub.spotsAvailable} cupo${sub.spotsAvailable !== 1 ? 's' : ''} disponible${sub.spotsAvailable !== 1 ? 's' : ''}`}
+                           {sub.status === "Full" || sub.spotsAvailable === 0 ? "Agotado" : `${sub.spotsAvailable} cupo${sub.spotsAvailable !== 1 ? 's' : ''} disponible${sub.spotsAvailable !== 1 ? 's' : ''}`}
                         </Badge>
                       </div>
                     </CardContent>
                     <CardFooter className="p-4 bg-slate-50 dark:bg-slate-700/50 border-t">
-                      <Button className="w-full bg-primary hover:bg-primary/90" asChild disabled={sub.status === "Full" || sub.spotsAvailable === 0}>
+                       <Button className="w-full bg-primary hover:bg-primary/90" asChild disabled={sub.status === "Full" || sub.spotsAvailable === 0}>
                           <Link href={`/browse-groups?service=${encodeURIComponent(sub.serviceName)}`}>
                               Ver Detalles
                           </Link>
@@ -365,5 +401,3 @@ export default function LandingPage() {
     </>
   );
 }
-
-    
