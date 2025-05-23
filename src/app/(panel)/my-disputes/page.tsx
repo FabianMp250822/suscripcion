@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Eye, Loader2, AlertTriangle, MessageSquare } from "lucide-react";
+import { PlusCircle, Eye, Loader2, MessageSquare } from "lucide-react"; // Removed AlertTriangle as it was unused
 import Link from "next/link";
 import { CreateDisputeTicketDialog } from "@/components/disputes/create-dispute-ticket-dialog";
 import { useAuth } from "@/hooks/use-auth";
@@ -145,7 +145,7 @@ export default function MyDisputesPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="outline" size="sm" asChild>
-                        {/* TODO: Link to a detailed dispute view page /my-disputes/[disputeId] */}
+                        {/* TODO: Link to a detailed dispute view page /my-disputes/[disputeId] or /panel/disputes/[disputeId] */}
                         <Link href={`#`}> 
                           <Eye className="mr-2 h-4 w-4" /> Ver Detalles
                         </Link>
