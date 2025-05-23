@@ -8,20 +8,20 @@ import { Badge } from "@/components/ui/badge";
 import { PlusCircle, Edit3, Trash2, Users, Eye } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { CreateListingDialog } from "@/components/sharer/create-listing-dialog"; // Import the dialog
+import { CreateListingDialog } from "@/components/sharer/create-listing-dialog"; 
 
-// Mock data - Initial state
+// Mock data - Initial state. pricePerSpot here is the SHARER'S DESIRED PRICE.
 const initialListings = [
-  { id: "l1", serviceName: "Netflix Premium", spotsAvailable: 2, totalSpots: 4, pricePerSpot: 5.99, status: "Active", icon: "https://placehold.co/64x64.png?text=N", groupId: "g1" },
-  { id: "l2", serviceName: "Spotify Family", spotsAvailable: 0, totalSpots: 6, pricePerSpot: 3.00, status: "Full", icon: "https://placehold.co/64x64.png?text=S", groupId: "g2" },
-  { id: "l3", serviceName: "HBO Max Plan", spotsAvailable: 3, totalSpots: 3, pricePerSpot: 4.50, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=H", groupId: "g3" },
+  { id: "l1", serviceName: "Netflix Premium", spotsAvailable: 2, totalSpots: 4, pricePerSpot: 5.00, status: "Active", icon: "https://placehold.co/64x64.png?text=N", groupId: "g1" },
+  { id: "l2", serviceName: "Spotify Family", spotsAvailable: 0, totalSpots: 6, pricePerSpot: 2.50, status: "Full", icon: "https://placehold.co/64x64.png?text=S", groupId: "g2" },
+  { id: "l3", serviceName: "HBO Max Plan", spotsAvailable: 3, totalSpots: 3, pricePerSpot: 4.00, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=H", groupId: "g3" },
 ];
 
 export default function MyListingsPage() {
   const [listings, setListings] = useState(initialListings);
 
   const handleNewListing = (newListingData: any) => {
-    // Add the new listing to the state. In a real app, this would likely re-fetch or update from an API.
+    // newListingData.pricePerSpot is the sharer's desired price
     setListings(prevListings => [...prevListings, newListingData]);
   };
 
@@ -59,7 +59,8 @@ export default function MyListingsPage() {
                 </Badge>
               </CardHeader>
               <CardContent className="flex-1">
-                <p className="text-2xl font-semibold">${listing.pricePerSpot.toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
+                <p className="text-2xl font-semibold">${listing.pricePerSpot.toFixed(2)} <span className="text-sm text-muted-foreground">/ desired per spot / month</span></p>
+                <p className="text-xs text-muted-foreground mt-1"> (Subscribers will see a final price including a service fee)</p>
                 <div className="mt-2 flex items-center text-sm text-muted-foreground">
                   <Users className="mr-1 h-4 w-4" />
                   <span>{listing.totalSpots - listing.spotsAvailable} members joined</span>
@@ -93,3 +94,5 @@ export default function MyListingsPage() {
     </div>
   );
 }
+
+    

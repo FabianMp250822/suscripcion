@@ -57,12 +57,12 @@ export const metadata: Metadata = {
 const faqItems = [
   {
     question: "¿Cómo puedo compartir mi suscripción en SuscripGrupo?",
-    answer: "1. Publicas los detalles de tu suscripción de forma segura en nuestra plataforma. 2. Estableces el precio por cupo y el número de participantes. 3. Aceptas a los interesados y recibes el pago directamente a través de nuestro sistema seguro.",
+    answer: "1. Publicas los detalles de tu suscripción de forma segura en nuestra plataforma. 2. Estableces el precio que deseas recibir por cupo. 3. Aceptas a los interesados y recibes el pago (menos una pequeña tarifa de servicio) directamente a través de nuestro sistema seguro.",
     value: "item-1",
   },
   {
     question: "¿Es seguro unirme a un grupo en SuscripGrupo?",
-    answer: "¡Sí! Priorizamos tu seguridad. Verificamos a los usuarios proveedores y tu pago está protegido. Nuestro sistema de arbitraje garantiza tu acceso durante todo el ciclo de pago o te ayudamos a resolver cualquier inconveniente.",
+    answer: "¡Sí! Priorizamos tu seguridad. Verificamos a los usuarios proveedores y tu pago está protegido. Ves el precio final, que incluye una tarifa de servicio transparente para SuscripGrupo. Nuestro sistema de arbitraje garantiza tu acceso durante todo el ciclo de pago.",
     value: "item-2",
   },
   {
@@ -77,15 +77,16 @@ const faqItems = [
   }
 ];
 
+// Prices here reflect FINAL PRICE to participant (Sharer's desired price + service fee)
 const availableSubscriptionsMock = [
-  { id: "s1", name: "Netflix Premium", type: "Cupo en Plan Familiar 4K", price: 3.99, currency: "USD", availability: "2 cupos disponibles", icon: "https://placehold.co/80x80.png/E50914/FFFFFF?text=N", dataAiHint: "netflix logo" },
-  { id: "s2", name: "Spotify Premium", type: "Lugar en Plan Dúo", price: 2.75, currency: "USD", availability: "1 cupo disponible", icon: "https://placehold.co/80x80.png/1ED760/FFFFFF?text=S", dataAiHint: "spotify logo" },
-  { id: "s3", name: "HBO Max Standard", type: "Acceso Compartido", price: 4.50, currency: "USD", availability: "3 cupos disponibles", icon: "https://placehold.co/80x80.png/7E4FF6/FFFFFF?text=H", dataAiHint: "hbo logo" },
-  { id: "s4", name: "Disney+ Anual", type: "Cupo en Plan Familiar", price: 2.00, currency: "USD", availability: "SOLD OUT", icon: "https://placehold.co/80x80.png/0063E5/FFFFFF?text=D", dataAiHint: "disney logo" },
+  { id: "s1", name: "Netflix Premium", type: "Cupo en Plan Familiar 4K", price: 4.70, currency: "USD", availability: "2 cupos disponibles", icon: "https://placehold.co/80x80.png/E50914/FFFFFF?text=N", dataAiHint: "netflix logo" },
+  { id: "s2", name: "Spotify Premium", type: "Lugar en Plan Dúo", price: 3.25, currency: "USD", availability: "1 cupo disponible", icon: "https://placehold.co/80x80.png/1ED760/FFFFFF?text=S", dataAiHint: "spotify logo" },
+  { id: "s3", name: "HBO Max Standard", type: "Acceso Compartido", price: 5.30, currency: "USD", availability: "3 cupos disponibles", icon: "https://placehold.co/80x80.png/7E4FF6/FFFFFF?text=H", dataAiHint: "hbo logo" },
+  { id: "s4", name: "Disney+ Anual", type: "Cupo en Plan Familiar", price: 2.35, currency: "USD", availability: "SOLD OUT", icon: "https://placehold.co/80x80.png/0063E5/FFFFFF?text=D", dataAiHint: "disney logo" },
 ];
 
 const trustPillars = [
-  { title: "Pagos Protegidos", description: "Utilizamos pasarelas de pago cifradas y seguras para proteger cada transacción.", icon: Lock },
+  { title: "Pagos Protegidos", description: "Utilizamos pasarelas de pago cifradas y seguras (Stripe) para proteger cada transacción.", icon: Lock },
   { title: "Garantía de Acceso", description: "Nuestro sistema de arbitraje asegura tu acceso o te ayudamos a resolverlo.", icon: ShieldCheck },
   { title: "Comunidad Verificada", description: "Fomentamos un ambiente de confianza con perfiles de usuario claros.", icon: Users },
   { title: "Soporte Dedicado", description: "Nuestro equipo está aquí para ayudarte con cualquier consulta o disputa.", icon: MessageCircle },
@@ -98,7 +99,7 @@ export default function LandingPage() {
     "name": "SuscripGrupo",
     "url": "https://suscripgrupo.example.com", // Replace with your actual URL
     "logo": "https://suscripgrupo.example.com/logo.png", // Replace with your actual logo URL
-    "parentOrganization": { // Added parent organization
+    "parentOrganization": { 
         "@type": "Organization",
         "name": "tecnosalud internacional"
     },
@@ -106,9 +107,9 @@ export default function LandingPage() {
       "@type": "ContactPoint",
       "telephone": "+1-XXX-XXX-XXXX", // Optional
       "contactType": "Customer Support",
-      "email": "soporte@suscripgrupo.example.com"
+      "email": "soporte@tecnolsalud.cloud"
     },
-    "sameAs": [ // Optional: social media links
+    "sameAs": [ 
       // "https://www.facebook.com/yourplatform",
       // "https://www.twitter.com/yourplatform",
       // "https://www.linkedin.com/company/yourplatform"
@@ -160,7 +161,7 @@ export default function LandingPage() {
     "@context": "https://schema.org",
     "@type": "Product",
     "name": `${sub.name} - ${sub.type} (Cupo en SuscripGrupo)`,
-    "description": `Acceso compartido para ${sub.name}. ${sub.availability}. Ofrecido en SuscripGrupo.`,
+    "description": `Acceso compartido para ${sub.name}. ${sub.availability}. Ofrecido en SuscripGrupo. Precio final, incluye tarifa de servicio.`,
     "image": sub.icon,
     "brand": {
       "@type": "Brand",
@@ -176,7 +177,7 @@ export default function LandingPage() {
         "name": "SuscripGrupo (Plataforma Intermediaria)"
       }
     },
-    "mainEntityOfPage": { // Optional, but good for linking back
+    "mainEntityOfPage": { 
         "@type": "WebPage",
         "@id": `https://suscripgrupo.example.com/browse-groups/${sub.id}` // Replace with actual group URL
     }
@@ -196,7 +197,7 @@ export default function LandingPage() {
         ))}
       </Head>
 
-      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-300 via-blue-200 to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-400 via-blue-300 to-sky-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Hero Section */}
         <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/41a7fc/FFFFFF?text=Servicios+Digitales')" }} data-ai-hint="digital services collage abstract">
           <div className="container mx-auto px-4 bg-black/40 dark:bg-black/60 py-10 rounded-xl backdrop-blur-sm">
@@ -269,9 +270,10 @@ export default function LandingPage() {
                     <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>
                     <div className="mt-auto">
                       <p className="text-2xl font-bold text-primary mb-1">${sub.price.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-                      <Badge 
+                       <p className="text-xs text-muted-foreground">(Precio final. Incluye tarifa de servicio.)</p>
+                      <Badge
                         variant={sub.availability.toLowerCase().includes("sold out") ? "destructive" : "default"}
-                        className={sub.availability.toLowerCase().includes("sold out") ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"}
+                        className={`${sub.availability.toLowerCase().includes("sold out") ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
                       >
                         {sub.availability}
                       </Badge>
@@ -342,7 +344,7 @@ export default function LandingPage() {
                         ¿Preguntas? ¿Sugerencias? Estamos aquí para ayudar.
                     </p>
                     <p className="text-muted-foreground mt-1">
-                        Email: <a href="mailto:soporte@suscripgrupo.example.com" className="text-primary hover:underline">soporte@suscripgrupo.example.com</a>
+                        Email: <a href="mailto:soporte@tecnolsalud.cloud" className="text-primary hover:underline">soporte@tecnolsalud.cloud</a>
                     </p>
                     {/* <p className="text-muted-foreground mt-1">Dirección: 123 Calle Ficticia, Ciudad, País (Si aplica)</p> */}
                 </Card>
@@ -352,3 +354,5 @@ export default function LandingPage() {
     </>
   );
 }
+
+    

@@ -10,12 +10,13 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 
 // Mock data for available groups (sharers' listings)
+// pricePerSpot here is the FINAL PRICE (sharer's desired price + service fee)
 const availableGroups = [
-  { id: "g1", serviceName: "Netflix Ultra HD Plan", spotsAvailable: 1, totalSpots: 4, pricePerSpot: 6.50, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=N", sharerName: "Bob The Sharer", sharerAvatar: "https://placehold.co/40x40.png?text=BS" },
-  { id: "g2", serviceName: "Spotify Premium Family", spotsAvailable: 3, totalSpots: 6, pricePerSpot: 2.75, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=S", sharerName: "Alice Listswell", sharerAvatar: "https://placehold.co/40x40.png?text=AL" },
-  { id: "g3", serviceName: "HBO Max Standard", spotsAvailable: 0, totalSpots: 3, pricePerSpot: 5.00, status: "Full", icon: "https://placehold.co/64x64.png?text=H", sharerName: "Charlie Streamer", sharerAvatar: "https://placehold.co/40x40.png?text=CS" },
-  { id: "g4", serviceName: "Disney+ Bundle", spotsAvailable: 2, totalSpots: 5, pricePerSpot: 4.20, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=D", sharerName: "Diana Shares", sharerAvatar: "https://placehold.co/40x40.png?text=DS" },
-  { id: "g5", serviceName: "YouTube Premium Family", spotsAvailable: 4, totalSpots: 6, pricePerSpot: 3.50, status: "Active", icon: "https://placehold.co/64x64.png?text=YT", sharerName: "Edward Vids", sharerAvatar: "https://placehold.co/40x40.png?text=EV" },
+  { id: "g1", serviceName: "Netflix Ultra HD Plan", spotsAvailable: 1, totalSpots: 4, pricePerSpot: 7.65, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=N", sharerName: "Bob The Sharer", sharerAvatar: "https://placehold.co/40x40.png?text=BS" }, // Was 6.50
+  { id: "g2", serviceName: "Spotify Premium Family", spotsAvailable: 3, totalSpots: 6, pricePerSpot: 3.25, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=S", sharerName: "Alice Listswell", sharerAvatar: "https://placehold.co/40x40.png?text=AL" }, // Was 2.75
+  { id: "g3", serviceName: "HBO Max Standard", spotsAvailable: 0, totalSpots: 3, pricePerSpot: 5.90, status: "Full", icon: "https://placehold.co/64x64.png?text=H", sharerName: "Charlie Streamer", sharerAvatar: "https://placehold.co/40x40.png?text=CS" }, // Was 5.00
+  { id: "g4", serviceName: "Disney+ Bundle", spotsAvailable: 2, totalSpots: 5, pricePerSpot: 4.95, status: "Recruiting", icon: "https://placehold.co/64x64.png?text=D", sharerName: "Diana Shares", sharerAvatar: "https://placehold.co/40x40.png?text=DS" }, // Was 4.20
+  { id: "g5", serviceName: "YouTube Premium Family", spotsAvailable: 4, totalSpots: 6, pricePerSpot: 4.10, status: "Active", icon: "https://placehold.co/64x64.png?text=YT", sharerName: "Edward Vids", sharerAvatar: "https://placehold.co/40x40.png?text=EV" }, // Was 3.50
 ];
 
 export default function BrowseGroupsPage() {
@@ -23,7 +24,7 @@ export default function BrowseGroupsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Browse Shared Groups</h1>
-        <p className="text-muted-foreground">Find and join shared subscription groups.</p>
+        <p className="text-muted-foreground">Find and join shared subscription groups. Payments processed via Stripe.</p>
       </div>
 
       <Card className="shadow-md">
@@ -64,6 +65,7 @@ export default function BrowseGroupsPage() {
               </CardHeader>
               <CardContent className="flex-1">
                 <p className="text-2xl font-semibold">${group.pricePerSpot.toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
+                <p className="text-xs text-muted-foreground mt-1">(Final price. Includes SuscripGrupo service fee. Full breakdown before payment.)</p>
                 <div className="mt-2 flex items-center text-sm text-muted-foreground">
                   <Users className="mr-1 h-4 w-4" />
                   <span>{group.totalSpots - group.spotsAvailable} / {group.totalSpots} members</span>
@@ -94,3 +96,5 @@ export default function BrowseGroupsPage() {
     </div>
   );
 }
+
+    

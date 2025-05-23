@@ -37,7 +37,7 @@ export default function DoNotSellPage() {
               <strong>Control de Privacidad Global (GPC):</strong> Honramos la señal de Control de Privacidad Global. Si tu navegador o extensión de navegador transmite la señal GPC, la trataremos automáticamente como una solicitud válida para optar por la exclusión de la venta o compartición de tu información personal para ese navegador. Puedes aprender más sobre GPC en <Link href="https://globalprivacycontrol.org/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">globalprivacycontrol.org <ExternalLink className="inline-block h-3 w-3 ml-0.5" /></Link>.
             </li>
             <li>
-              <strong>Enviar una Solicitud:</strong> Puedes enviar una solicitud de exclusión contactando a nuestro equipo de privacidad en <Link href="mailto:privacidad@suscripgrupo.example.com" className="text-primary hover:underline">privacidad@suscripgrupo.example.com</Link>. Por favor, incluye suficiente información para que podamos identificarte en nuestros sistemas.
+              <strong>Enviar una Solicitud:</strong> Puedes enviar una solicitud de exclusión contactando a nuestro equipo de privacidad en <Link href="mailto:soporte@tecnolsalud.cloud" className="text-primary hover:underline">soporte@tecnolsalud.cloud</Link>. Por favor, incluye suficiente información para que podamos identificarte en nuestros sistemas.
             </li>
           </ul>
 
@@ -60,3 +60,5 @@ export default function DoNotSellPage() {
     </div>
   );
 }
+
+    

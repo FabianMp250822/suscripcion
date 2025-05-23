@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
             <li>Para mejorar nuestro sitio web con el fin de servirte mejor.</li>
             <li>Para permitirnos servirte mejor al responder a tus solicitudes de servicio al cliente.</li>
             <li>Para administrar un concurso, promoción, encuesta u otra característica del sitio.</li>
-            <li>Para procesar rápidamente tus transacciones.</li>
+            <li>Para procesar rápidamente tus transacciones. Los pagos son gestionados a través de Stripe.</li>
             <li>Para enviar correos electrónicos periódicos sobre tu pedido u otros productos y servicios.</li>
           </ul>
 
@@ -46,7 +46,7 @@ export default function PrivacyPolicyPage() {
           <p>
             SuscripGrupo (por tecnosalud internacional)<br />
             [Dirección de tu Compañía]<br />
-            <Link href="mailto:privacidad@suscripgrupo.example.com" className="text-primary hover:underline">privacidad@suscripgrupo.example.com</Link>
+            <Link href="mailto:soporte@tecnolsalud.cloud" className="text-primary hover:underline">soporte@tecnolsalud.cloud</Link>
           </p>
 
           <p className="text-sm text-muted-foreground pt-4">
@@ -63,3 +63,5 @@ export default function PrivacyPolicyPage() {
     </div>
   );
 }
+
+    

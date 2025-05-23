@@ -29,7 +29,7 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
   const [platformName, setPlatformName] = useState("");
   const [externalUsername, setExternalUsername] = useState("");
   const [externalPassword, setExternalPassword] = useState("");
-  const [pricePerSlot, setPricePerSlot] = useState("");
+  const [desiredPricePerSlot, setDesiredPricePerSlot] = useState(""); // Changed from pricePerSlot
   const [totalSlots, setTotalSlots] = useState("");
   const [confirm2FA, setConfirm2FA] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -45,40 +45,40 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
       });
       return;
     }
-    // TODO: Implement secure credential handling and API call to create listing
-    console.log("New Listing Data:", {
+    
+    console.log("New Listing Data (Sharer's perspective):", {
       platformName,
       externalUsername,
       // externalPassword should NOT be logged in production. Sent securely to backend.
-      pricePerSlot: parseFloat(pricePerSlot),
+      pricePerSpot: parseFloat(desiredPricePerSlot), // This is the sharer's desired price
       totalSlots: parseInt(totalSlots),
       confirm2FA,
     });
 
     // Simulating API call and response
+    // The backend would calculate the final price including service fee.
+    // For the frontend simulation, we pass the desired price.
     const newListing = {
-      id: `l${Math.floor(Math.random() * 1000)}`, // Mock ID
+      id: `l${Math.floor(Math.random() * 1000)}`, 
       serviceName: platformName,
-      spotsAvailable: parseInt(totalSlots), // Initially all spots are available
+      spotsAvailable: parseInt(totalSlots), 
       totalSpots: parseInt(totalSlots),
-      pricePerSpot: parseFloat(pricePerSlot),
-      status: "Recruiting", // Default status for new listings
+      pricePerSpot: parseFloat(desiredPricePerSlot), // This is the sharer's desired price
+      status: "Recruiting", 
       icon: `https://placehold.co/64x64.png?text=${platformName.substring(0,1).toUpperCase() || 'P'}`,
-      groupId: `g${Math.floor(Math.random() * 1000)}`, // Mock Group ID
-      // In a real app, you'd get these from the backend response
+      groupId: `g${Math.floor(Math.random() * 1000)}`, 
     };
 
     onListingCreated(newListing);
     toast({
       title: "Listing Created (Simulated)",
-      description: `${platformName} has been listed for sharing.`,
+      description: `${platformName} has been listed for sharing. You set your desired price per slot.`,
     });
 
-    // Reset form and close dialog
     setPlatformName("");
     setExternalUsername("");
     setExternalPassword("");
-    setPricePerSlot("");
+    setDesiredPricePerSlot("");
     setTotalSlots("");
     setConfirm2FA(false);
     setIsOpen(false);
@@ -103,7 +103,7 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
             <AlertDescription className="!text-orange-700 text-xs">
               You are about to provide login credentials for an external service. Sharing account details carries risks.
               Ensure you use strong, unique passwords. We strive to store credentials securely (via backend encryption, not yet implemented),
-              but ultimate responsibility for account security lies with you.
+              but ultimate responsibility for account security lies with you. Payments are processed via Stripe.
             </AlertDescription>
           </Alert>
 
@@ -118,11 +118,10 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
           <div>
             <Label htmlFor="externalPassword">External Platform Password</Label>
             <Input id="externalPassword" type="password" value={externalPassword} onChange={(e) => setExternalPassword(e.target.value)} placeholder="••••••••" required />
-             {/* TODO: Consider a "show password" toggle */}
           </div>
           <div>
-            <Label htmlFor="pricePerSlot">Price per Slot/User (USD per month)</Label>
-            <Input id="pricePerSlot" type="number" value={pricePerSlot} onChange={(e) => setPricePerSlot(e.target.value)} placeholder="5.99" step="0.01" min="0" required />
+            <Label htmlFor="desiredPricePerSlot">Price I want to receive per slot (USD per month)</Label>
+            <Input id="desiredPricePerSlot" type="number" value={desiredPricePerSlot} onChange={(e) => setDesiredPricePerSlot(e.target.value)} placeholder="5.00" step="0.01" min="0" required />
           </div>
            <div>
             <Label htmlFor="totalSlots">Total Available Spots in Subscription</Label>
@@ -154,3 +153,5 @@ export function CreateListingDialog({ onListingCreated, children }: CreateListin
     </Dialog>
   );
 }
+
+    
