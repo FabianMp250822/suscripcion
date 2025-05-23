@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase/config";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
+import { Icons } from "@/components/icons"; // Added this import
 
 interface CreateListingDialogProps {
   // onListingCreated callback is removed as we're now writing directly to Firestore
@@ -71,7 +72,7 @@ export function CreateListingDialog({ children }: CreateListingDialogProps) {
       desiredPricePerSpot: parseFloat(desiredPricePerSlot),
       totalSpots: parseInt(totalSlots),
       spotsAvailable: parseInt(totalSlots), // Initially all spots are available
-      sharerId: user.uid,
+      sharerId: user.uid, // Make sure sharerId is the current user's UID
       status: "Recruiting", // Initial status
       iconUrl: `https://placehold.co/64x64.png?text=${platformName.substring(0,1).toUpperCase() || 'P'}`, // Placeholder icon
       createdAt: serverTimestamp(),
