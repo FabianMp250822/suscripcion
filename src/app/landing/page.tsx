@@ -1,5 +1,5 @@
 
-"use client"; // Needs to be a client component for useEffect and useState
+"use client";
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -24,7 +24,7 @@ interface SubscriptionOffer {
   totalSpots: number;
   iconUrl: string;
   dataAiHint?: string;
-  status?: string;
+  status?: string; // e.g., "Recruiting", "Full", "Active" for the listing
 }
 
 const faqItems = [
@@ -62,25 +62,29 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-
   useEffect(() => {
     const fetchPopularSubscriptions = async () => {
+      console.log("Attempting to fetch popular subscriptions...");
       setLoading(true);
       setFetchError(null);
       try {
-        // Assuming 'listings' collection stores sharable subscriptions
-        // and they have 'isActive' (boolean) and 'popularity' (number) fields.
         const listingsRef = collection(db, "listings");
         const q = query(
           listingsRef,
-          where("isActive", "==", true), // Ensure this field exists in your Firestore documents and you have an index for it
-          orderBy("popularity", "desc"),  // Ensure this field exists and you have an index for it
+          where("isActive", "==", true),
+          orderBy("popularity", "desc"),
           limit(8)
         );
+
+        console.log("Firestore query:", q);
         const querySnapshot = await getDocs(q);
+        console.log('Query snapshot:', querySnapshot);
+        console.log('Number of documents fetched:', querySnapshot.size);
+
         const fetchedSubscriptions: SubscriptionOffer[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
+          console.log('Processing document ID:', doc.id, 'Data:', data);
           fetchedSubscriptions.push({
             id: doc.id,
             serviceName: data.serviceName || "Unknown Service",
@@ -95,26 +99,31 @@ export default function LandingPage() {
           });
         });
         setPopularSubscriptions(fetchedSubscriptions);
+        if (fetchedSubscriptions.length === 0) {
+          console.log("No popular subscriptions found matching criteria (isActive: true, ordered by popularity). Check Firestore data and indexes.");
+        }
       } catch (error) {
         const firebaseError = error as FirestoreError;
         console.error("Error fetching popular subscriptions from Firestore:", firebaseError);
+        let userErrorMessage = "No se pudieron cargar las suscripciones populares. Inténtalo de nuevo más tarde.";
         if (firebaseError.code === 'permission-denied') {
-          console.warn("Firestore permission denied. Check your security rules to allow unauthenticated reads for 'listings' on the landing page.");
-          setFetchError("No se pueden cargar las suscripciones en este momento debido a permisos. Asegúrate de que las reglas de seguridad de Firestore permitan la lectura pública de 'listings'.");
+          console.warn("Firestore permission denied. Ensure security rules allow public reads for 'listings'.");
+          userErrorMessage = "Error de permisos al cargar suscripciones. Contacta al soporte.";
         } else if (firebaseError.code === 'failed-precondition') {
-           console.warn("Firestore query failed due to missing index. Please create the required composite index in your Firebase console for the 'listings' collection involving 'isActive' and 'popularity'.");
-           setFetchError("No se pueden cargar las suscripciones en este momento. Es posible que falte un índice en la base de datos. Revisa la consola para más detalles.");
-        } else {
-          setFetchError("No se pudieron cargar las suscripciones populares. Inténtalo de nuevo más tarde.");
+           console.warn("Firestore query failed due to missing index. Please create the required composite index in your Firebase console for the 'listings' collection involving 'isActive' (boolean) and 'popularity' (number, descending). The error message from Firebase should contain a link to create it.");
+           userErrorMessage = "Error de configuración de base deatos. Es posible que falte un índice. Revisa la consola para más detalles o contacta al soporte.";
         }
+        setFetchError(userErrorMessage);
       } finally {
         setLoading(false);
+        console.log("Finished fetching popular subscriptions.");
       }
     };
 
     fetchPopularSubscriptions();
   }, []);
 
+  // Schema.org structured data
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -174,7 +183,6 @@ export default function LandingPage() {
       }
     }))
   };
-
 
   return (
     <>
@@ -260,7 +268,7 @@ export default function LandingPage() {
                         width={400}
                         height={200}
                         className="w-full h-40 object-contain p-4 bg-slate-100 dark:bg-slate-700"
-                        data-ai-hint={sub.dataAiHint || sub.serviceName.toLowerCase()}
+                        data-ai-hint={sub.dataAiHint || sub.serviceName?.toLowerCase().split(' ').slice(0,2).join(' ') || 'service logo'}
                       />
                     </CardHeader>
                     <CardContent className="p-6 flex-1 flex flex-col">
@@ -268,12 +276,12 @@ export default function LandingPage() {
                       {sub.type && <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>}
                       <div className="mt-auto">
                         <p className="text-2xl font-bold text-primary mb-1">${sub.pricePerSpot.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-                        <p className="text-xs text-muted-foreground mt-1">(Incluye tarifa de servicio SuscripGrupo. Desglose antes del pago.)</p>
+                        <p className="text-xs text-muted-foreground mt-1">(Incluye tarifa de servicio SuscripGrupo. Desglose antes del pago. Pagos vía Stripe)</p>
                         <Badge
                           variant={sub.status === "Full" || sub.spotsAvailable === 0 ? "destructive" : "default"}
                           className={`${sub.status === "Full" || sub.spotsAvailable === 0 ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
                         >
-                          {sub.status === "Full" || sub.spotsAvailable === 0 ? "Agotado" : `${sub.spotsAvailable} cupos disponibles`}
+                          {sub.status === "Full" || sub.spotsAvailable === 0 ? "Agotado" : `${sub.spotsAvailable} cupo${sub.spotsAvailable !== 1 ? 's' : ''} disponible${sub.spotsAvailable !== 1 ? 's' : ''}`}
                         </Badge>
                       </div>
                     </CardContent>
@@ -357,3 +365,5 @@ export default function LandingPage() {
     </>
   );
 }
+
+    
