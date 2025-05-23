@@ -1,15 +1,18 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
 
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
+import { getAuth, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
+
+// IMPORTANT: Replace these placeholder values with your new Firebase project's configuration details.
+// You can find these in your Firebase project settings in the Firebase console.
 const firebaseConfig = {
-  apiKey: "AIzaSyDj7ubGImyA3J06VZvAVrdfpDPddLQVwN0",
-  authDomain: "antoniogalan-15ae4.firebaseapp.com",
-  projectId: "antoniogalan-15ae4",
-  storageBucket: "antoniogalan-15ae4.appspot.com",
-  messagingSenderId: "134290457414",
-  appId: "1:134290457414:web:244892df5bf6f72f399b47",
-  measurementId: "G-4326BGS36V"
+  apiKey: "YOUR_NEW_API_KEY",
+  authDomain: "YOUR_NEW_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_NEW_PROJECT_ID",
+  storageBucket: "YOUR_NEW_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_NEW_MESSAGING_SENDER_ID",
+  appId: "YOUR_NEW_APP_ID",
+  measurementId: "YOUR_NEW_MEASUREMENT_ID" // This is optional
 };
 
 let app: FirebaseApp;
