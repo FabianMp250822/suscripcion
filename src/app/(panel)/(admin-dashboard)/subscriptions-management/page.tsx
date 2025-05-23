@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,61 +12,62 @@ export default function SubscriptionsManagementPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Subscription Management</h1>
-          <p className="text-muted-foreground">Define and manage subscription tiers and categories.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Gestión de Suscripciones</h1>
+          <p className="text-muted-foreground">Define y gestiona los niveles y categorías de suscripción de la plataforma.</p>
         </div>
         <Button>
-          <PlusCircle className="mr-2 h-4 w-4" /> Add New Tier
+          <PlusCircle className="mr-2 h-4 w-4" /> Añadir Nuevo Nivel
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Create New Subscription Tier</CardTitle>
-            <CardDescription>Add a new subscription plan to your platform.</CardDescription>
+            <CardTitle>Crear Nuevo Nivel de Suscripción</CardTitle>
+            <CardDescription>Añade un nuevo plan de suscripción a tu plataforma.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="tierName">Tier Name</Label>
-              <Input id="tierName" placeholder="e.g., Premium Plan" />
+              <Label htmlFor="tierName">Nombre del Nivel</Label>
+              <Input id="tierName" placeholder="Ej: Plan Premium, Nivel Básico" />
             </div>
             <div>
-              <Label htmlFor="price">Price (USD per month)</Label>
-              <Input id="price" type="number" placeholder="e.g., 9.99" />
+              <Label htmlFor="price">Precio (USD por mes)</Label>
+              <Input id="price" type="number" placeholder="Ej: 9.99" />
             </div>
             <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" placeholder="Briefly describe this tier and its benefits." />
+              <Label htmlFor="description">Descripción del Nivel</Label>
+              <Textarea id="description" placeholder="Describe brevemente este nivel y sus beneficios principales para los usuarios." />
             </div>
             <div className="space-y-2">
-              <Label>Features</Label>
+              <Label>Características Incluidas</Label>
               <div className="flex items-center space-x-2">
-                <Checkbox id="feature1" />
-                <Label htmlFor="feature1" className="font-normal">Unlimited Access</Label>
+                <Checkbox id="featureUnlimitedAccess" />
+                <Label htmlFor="featureUnlimitedAccess" className="font-normal">Acceso Ilimitado al Contenido</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="feature2" />
-                <Label htmlFor="feature2" className="font-normal">HD Streaming</Label>
+                <Checkbox id="featureHDStreaming" />
+                <Label htmlFor="featureHDStreaming" className="font-normal">Streaming en Alta Definición (HD)</Label>
               </div>
               <div className="flex items-center space-x-2">
-                <Checkbox id="feature3" />
-                <Label htmlFor="feature3" className="font-normal">Ad-free Experience</Label>
+                <Checkbox id="featureAdFree" />
+                <Label htmlFor="featureAdFree" className="font-normal">Experiencia sin Anuncios Publicitarios</Label>
               </div>
+              {/* Puedes añadir más checkboxes para otras características comunes o un sistema más dinámico */}
             </div>
-            <Button className="w-full">Create Tier</Button>
+            <Button className="w-full">Crear Nivel de Suscripción</Button>
           </CardContent>
         </Card>
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Existing Tiers</CardTitle>
-            <CardDescription>Manage current subscription plans.</CardDescription>
+            <CardTitle>Niveles Existentes</CardTitle>
+            <CardDescription>Gestiona los planes de suscripción actuales de la plataforma.</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Placeholder for list of existing tiers */}
+            {/* TODO: Implementar la carga y visualización de niveles existentes desde Firestore */}
             <div className="border border-dashed border-border rounded-md p-8 text-center">
-              <p className="text-muted-foreground">No subscription tiers created yet, or list will appear here.</p>
+              <p className="text-muted-foreground">Aún no se han creado niveles de suscripción, o la lista aparecerá aquí.</p>
             </div>
           </CardContent>
         </Card>
