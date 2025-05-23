@@ -47,6 +47,7 @@ const navItems: NavItem[] = [
   { href: "/my-active-subscriptions", label: "Active Subscriptions", icon: Icons.MyActiveSubscriptions, allowedRoles: ["subscriber"], segment: "my-active-subscriptions"},
   { href: "/payment-history", label: "Payment History", icon: Icons.PaymentHistory, allowedRoles: ["subscriber"], segment: "payment-history" },
   // All logged-in users
+  { href: "/browse-groups", label: "Browse Groups", icon: Icons.BrowseGroups, allowedRoles: ["admin", "sharer", "subscriber"], segment: "browse-groups"},
   { href: "/messages", label: "Messages", icon: Icons.Messages, allowedRoles: ["admin", "sharer", "subscriber"], segment: "messages"},
 ];
 
@@ -65,8 +66,8 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
     }
     if (!loading && user && pathname === "/login") {
         if (isAdmin) router.replace("/users");
-        else if (isSharer) router.replace("/my-listings");
-        else router.replace("/my-active-subscriptions");
+        else if (isSharer) router.replace("/my-listings"); // Default for sharer if not also just a subscriber
+        else router.replace("/browse-groups"); // Default for new subscriber
     }
   }, [user, loading, router, pathname, isAdmin, isSharer]);
 
@@ -93,7 +94,11 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   const currentUserRoles: ("admin" | "sharer" | "subscriber")[] = [];
   if (isAdmin) currentUserRoles.push("admin");
   if (isSharer) currentUserRoles.push("sharer");
-  if (isSubscriber) currentUserRoles.push("subscriber");
+  // All users (including admin and sharer) can also be subscribers in terms of browsing/joining groups.
+  // The AuthContext defines subscriber as someone whose email includes 'subscriber' OR is not admin/sharer.
+  // For nav items, we'll consider anyone logged in as a potential subscriber for browsing groups.
+  currentUserRoles.push("subscriber"); 
+
 
   const accessibleNavItems = navItems.filter(item =>
     item.allowedRoles.some(role => currentUserRoles.includes(role))
@@ -104,6 +109,8 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
     if (segments.length > 0) {
         // Handles cases like /manage-group/g1 by taking 'manage-group' or specific page like 'users'
         if (segments[0] === 'manage-group' && segments.length > 1) {
+            // For /manage-group/[id], we want "My Listings" to be active for sharers
+            if(isSharer) return 'my-listings'; 
             return segments[0]; 
         }
         return segments[0];
@@ -114,11 +121,9 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   
   const isLinkActive = (item: NavItem) => {
     if (item.segment) {
-      // For dynamic routes like /manage-group/[groupId], we might want to highlight "My Listings" or a "Manage Group" parent.
-      // This example checks if the current path starts with the item's segment.
-      // Or if it's a specific page like /manage-group, it should match `manage-group`.
+      // If the item.segment is 'my-listings' and current path starts with '/manage-group', it's active.
       if (item.segment === 'my-listings' && pathname.startsWith('/manage-group')) {
-        return true; // Highlight "My Listings" when on a manage-group page.
+        return true;
       }
       return activeSegment === item.segment;
     }

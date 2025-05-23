@@ -27,7 +27,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   PanelLeft,
-  MessageSquare, // Added for Messages
+  MessageSquare, 
+  Search, // Added for Browse Groups
 } from "lucide-react";
 
 export const Icons = {
@@ -41,7 +42,7 @@ export const Icons = {
   Earnings: DollarSign,
   MyActiveSubscriptions: CheckCircle,
   PaymentHistory: History,
-  Messages: MessageSquare, // Added for Messages
+  Messages: MessageSquare, 
   Login: LogIn,
   Logout: LogOut,
   Moon,
@@ -54,6 +55,7 @@ export const Icons = {
   ChevronsLeft,
   ChevronsRight,
   PanelLeft,
+  BrowseGroups: Search, // Added for Browse Groups
 };
 
 export type Icon = keyof typeof Icons;

@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, UserPlus } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, UserPlus, Slash } from "lucide-react";
 import Image from "next/image";
 
 // Mock data - replace with actual data fetching
@@ -16,6 +16,7 @@ const users = [
   { id: "5", name: "Edward Elric", email: "sharer.edward@example.com", role: "Sharer", status: "Pending", joined: "2023-05-12", avatar: "https://placehold.co/40x40.png?text=EE" },
   { id: "6", name: "Sam Stone", email: "sharer.subscriber.sam@example.com", role: "Sharer, Subscriber", status: "Active", joined: "2023-06-01", avatar: "https://placehold.co/40x40.png?text=SS" },
   { id: "7", name: "Sue Smith", email: "subscriber.sue@example.com", role: "Subscriber", status: "Active", joined: "2023-06-05", avatar: "https://placehold.co/40x40.png?text=SUE" },
+  { id: "8", name: "Suspended User", email: "suspended.user@example.com", role: "Subscriber", status: "Suspended", joined: "2023-01-01", avatar: "https://placehold.co/40x40.png?text=SU" },
 ];
 
 export default function UsersPage() {
@@ -66,13 +67,31 @@ export default function UsersPage() {
                   <TableCell>
                     <Badge 
                       variant={user.role.includes('Admin') ? 'default' : user.role.includes('Sharer') ? 'secondary' : 'outline'}
-                      className={user.role.includes('Admin') ? '' : user.role.includes('Sharer') && user.role.includes('Subscriber') ? 'bg-purple-500/20 text-purple-700 border-purple-500/30' : user.role.includes('Sharer') ? '' : '' }
+                      className={
+                        user.role.includes('Admin') ? 'bg-primary/20 text-primary border-primary/30' : 
+                        user.role.includes('Sharer') && user.role.includes('Subscriber') ? 'bg-purple-500/20 text-purple-700 border-purple-500/30' : 
+                        user.role.includes('Sharer') ? 'bg-accent/20 text-accent-foreground border-accent/30' : 
+                        'bg-muted text-muted-foreground border-border' 
+                      }
                     >
                       {user.role}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.status === 'Active' ? 'default' : user.status === 'Inactive' ? 'destructive' : 'secondary'} className={user.status === 'Active' ? 'bg-green-500/20 text-green-700 border-green-500/30' : ''}>
+                    <Badge 
+                        variant={
+                            user.status === 'Active' ? 'default' : 
+                            user.status === 'Inactive' ? 'destructive' :
+                            user.status === 'Suspended' ? 'outline' : 
+                            'secondary'
+                        } 
+                        className={
+                            user.status === 'Active' ? 'bg-green-500/20 text-green-700 border-green-500/30' :
+                            user.status === 'Inactive' ? 'bg-red-500/20 text-red-700 border-red-500/30' :
+                            user.status === 'Suspended' ? 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30' :
+                            'bg-gray-500/20 text-gray-700 border-gray-500/30' // For Pending or other statuses
+                        }
+                    >
                       {user.status}
                     </Badge>
                   </TableCell>
@@ -89,6 +108,11 @@ export default function UsersPage() {
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem>View Details</DropdownMenuItem>
                         <DropdownMenuItem>Edit User</DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Slash className="mr-2 h-4 w-4" />
+                          Suspend User
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive">Delete User</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
