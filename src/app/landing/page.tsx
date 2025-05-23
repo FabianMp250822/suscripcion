@@ -1,19 +1,18 @@
 
-"use client"; // This page needs to be a client component to fetch data client-side
-
+"use client";
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge'; // Ensure Badge is imported
-import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Users, Search, DollarSign, ShieldCheck, MessageCircle, Lock, Zap, Loader2 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, orderBy, limit, getDocs, type FirestoreError } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, type FirestoreError, type DocumentData, Timestamp } from 'firebase/firestore';
 
-// Define an interface for subscription data for type safety
+
 interface SubscriptionOffer {
   id: string;
   serviceName: string;
@@ -24,7 +23,9 @@ interface SubscriptionOffer {
   totalSpots: number;
   iconUrl: string;
   dataAiHint?: string;
-  status?: string; // e.g., "Recruiting", "Full", "Active" for the listing
+  status?: string; 
+  isActive?: boolean;
+  popularity?: number;
 }
 
 const faqItems = [
@@ -61,103 +62,6 @@ export default function LandingPage() {
   const [popularSubscriptions, setPopularSubscriptions] = useState<SubscriptionOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchPopularSubscriptions = async () => {
-      console.log("Attempting to fetch popular subscriptions...");
-      setLoading(true);
-      setFetchError(null);
-      let fetchedSubscriptions: SubscriptionOffer[] = [];
-
-      try {
-        // Primary query for "popular" subscriptions
-        const primaryListingsRef = collection(db, "listings");
-        const qPrimary = query(
-          primaryListingsRef,
-          where("isActive", "==", true),
-          orderBy("popularity", "desc"),
-          limit(8)
-        );
-
-        console.log("Firestore primary query:", qPrimary);
-        const primaryQuerySnapshot = await getDocs(qPrimary);
-        console.log('Primary query snapshot:', primaryQuerySnapshot);
-        console.log('Number of documents fetched by primary query:', primaryQuerySnapshot.size);
-
-        primaryQuerySnapshot.forEach((doc) => {
-          const data = doc.data();
-          console.log('Processing document ID (primary):', doc.id, 'Data:', data);
-          fetchedSubscriptions.push({
-            id: doc.id,
-            serviceName: data.serviceName || "Unknown Service",
-            pricePerSpot: data.pricePerSpot || 0, // This is the final price for subscribers
-            spotsAvailable: data.spotsAvailable || 0,
-            totalSpots: data.totalSpots || 0,
-            iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${(data.serviceName || "S").substring(0,1)}`,
-            status: data.status || "Unknown", // e.g. "Recruiting", "Full"
-            type: data.type,
-            currency: data.currency,
-            dataAiHint: data.dataAiHint || data.serviceName?.toLowerCase().split(" ").slice(0,2).join(" ") || "service logo",
-          });
-        });
-
-        // Fallback query if primary query returns no results
-        if (fetchedSubscriptions.length === 0) {
-          console.log("Primary query returned 0 results. Attempting fallback query...");
-          const fallbackListingsRef = collection(db, "listings");
-          // A simple fallback: fetch any 2 listings. You might want to add `where("isActive", "==", true)` here too,
-          // or a different ordering like `orderBy("createdAt", "desc")`.
-          const qFallback = query(fallbackListingsRef, limit(2));
-          
-          console.log("Firestore fallback query:", qFallback);
-          const fallbackQuerySnapshot = await getDocs(qFallback);
-          console.log('Fallback query snapshot:', fallbackQuerySnapshot);
-          console.log('Number of documents fetched by fallback query:', fallbackQuerySnapshot.size);
-
-          fallbackQuerySnapshot.forEach((doc) => {
-            const data = doc.data();
-            console.log('Processing document ID (fallback):', doc.id, 'Data:', data);
-            fetchedSubscriptions.push({
-              id: doc.id,
-              serviceName: data.serviceName || "Unknown Service",
-              pricePerSpot: data.pricePerSpot || 0,
-              spotsAvailable: data.spotsAvailable || 0,
-              totalSpots: data.totalSpots || 0,
-              iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${(data.serviceName || "S").substring(0,1)}`,
-              status: data.status || "Unknown",
-              type: data.type,
-              currency: data.currency,
-              dataAiHint: data.dataAiHint || data.serviceName?.toLowerCase().split(" ").slice(0,2).join(" ") || "service logo",
-            });
-          });
-        }
-        
-        setPopularSubscriptions(fetchedSubscriptions);
-
-        if (fetchedSubscriptions.length === 0) {
-          console.log("No subscriptions found by primary or fallback queries. Check Firestore data and indexes.");
-        }
-
-      } catch (error) {
-        const firebaseError = error as FirestoreError;
-        console.error("Error fetching popular subscriptions from Firestore:", firebaseError);
-        let userErrorMessage = "No se pudieron cargar las suscripciones populares. Inténtalo de nuevo más tarde.";
-        if (firebaseError.code === 'permission-denied') {
-          console.warn("Firestore permission denied. Ensure security rules allow public reads for 'listings' collection. Current rules might require authentication.");
-          userErrorMessage = "Error de permisos al cargar suscripciones. Contacta al soporte.";
-        } else if (firebaseError.code === 'failed-precondition') {
-           console.warn("Firestore query failed due to missing index. Please create the required composite index in your Firebase console for the 'listings' collection (e.g., for 'isActive' and 'popularity'). The error message from Firebase should contain a link to create it.");
-           userErrorMessage = "Error de configuración de base de datos. Es posible que falte un índice. Revisa la consola para más detalles o contacta al soporte.";
-        }
-        setFetchError(userErrorMessage);
-      } finally {
-        setLoading(false);
-        console.log("Finished fetching popular subscriptions.");
-      }
-    };
-
-    fetchPopularSubscriptions();
-  }, []);
 
   // Schema.org structured data (Simplified as dynamic generation for Products is complex client-side for SEO)
   const organizationSchema = {
@@ -219,6 +123,115 @@ export default function LandingPage() {
     }))
   };
 
+  useEffect(() => {
+    const fetchPopularSubscriptions = async () => {
+      console.log("Attempting to fetch popular subscriptions...");
+      setLoading(true);
+      setFetchError(null);
+      let fetchedSubscriptions: SubscriptionOffer[] = [];
+
+      try {
+        const listingsRef = collection(db, "listings");
+        // Primary query for "popular" subscriptions
+        const qPrimary = query(
+          listingsRef,
+          where("isActive", "==", true),
+          orderBy("popularity", "desc"),
+          limit(8)
+        );
+
+        console.log("Firestore primary query:", qPrimary);
+        const primaryQuerySnapshot = await getDocs(qPrimary);
+        console.log('Primary query snapshot:', primaryQuerySnapshot);
+        console.log('Number of documents fetched by primary query:', primaryQuerySnapshot.size);
+
+        primaryQuerySnapshot.forEach((doc) => {
+          const data = doc.data() as DocumentData;
+          console.log('Processing document ID (primary):', doc.id, 'Data:', data);
+          const sharerPrice = data.pricePerSpot || 0;
+          const serviceFeePercentage = 0.15; // Example 15% service fee
+          const serviceFee = sharerPrice * serviceFeePercentage;
+          const finalPrice = sharerPrice + serviceFee;
+
+          fetchedSubscriptions.push({
+            id: doc.id,
+            serviceName: data.serviceName || "Unknown Service",
+            pricePerSpot: finalPrice, 
+            spotsAvailable: data.spotsAvailable || 0,
+            totalSpots: data.totalSpots || 0,
+            iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${(data.serviceName || "S").substring(0,1)}`,
+            status: data.status || "Unknown", 
+            type: data.type,
+            currency: data.currency,
+            dataAiHint: data.dataAiHint || data.serviceName?.toLowerCase().split(" ").slice(0,2).join(" ") || "service logo",
+          });
+        });
+
+        // Fallback query if primary query returns no results
+        if (fetchedSubscriptions.length === 0) {
+          console.log("Primary query returned 0 results. Attempting fallback query to fetch any 2 listings...");
+          const fallbackListingsRef = collection(db, "listings");
+          const qFallback = query(fallbackListingsRef, limit(2));
+          
+          console.log("Firestore fallback query:", qFallback);
+          const fallbackQuerySnapshot = await getDocs(qFallback);
+          console.log('Fallback query snapshot:', fallbackQuerySnapshot);
+          console.log('Number of documents fetched by fallback query:', fallbackQuerySnapshot.size);
+
+          fallbackQuerySnapshot.forEach((doc) => {
+            const data = doc.data() as DocumentData;
+            console.log('Processing document ID (fallback):', doc.id, 'Data:', data);
+            const sharerPrice = data.pricePerSpot || 0;
+            const serviceFeePercentage = 0.15; // Example 15% service fee
+            const serviceFee = sharerPrice * serviceFeePercentage;
+            const finalPrice = sharerPrice + serviceFee;
+            
+            fetchedSubscriptions.push({
+              id: doc.id,
+              serviceName: data.serviceName || "Unknown Service",
+              pricePerSpot: finalPrice,
+              spotsAvailable: data.spotsAvailable || 0,
+              totalSpots: data.totalSpots || 0,
+              iconUrl: data.iconUrl || `https://placehold.co/400x200.png?text=${(data.serviceName || "S").substring(0,1)}`,
+              status: data.status || "Unknown",
+              type: data.type,
+              currency: data.currency,
+              dataAiHint: data.dataAiHint || data.serviceName?.toLowerCase().split(" ").slice(0,2).join(" ") || "service logo",
+            });
+          });
+           if (fallbackQuerySnapshot.size > 0) {
+            console.log("Fallback query successful. Displaying these listings.");
+          } else {
+            console.log("Fallback query also returned 0 results. No listings to display from fallback.");
+          }
+        }
+        
+        setPopularSubscriptions(fetchedSubscriptions);
+
+        if (fetchedSubscriptions.length === 0) {
+          console.log("No subscriptions found by primary or fallback queries. Check Firestore data and indexes.");
+        }
+
+      } catch (error) {
+        const firebaseError = error as FirestoreError;
+        console.error("Error fetching popular subscriptions from Firestore:", firebaseError);
+        let userErrorMessage = "No se pudieron cargar las suscripciones populares. Inténtalo de nuevo más tarde.";
+        if (firebaseError.code === 'permission-denied') {
+          console.warn("Firestore permission denied. Ensure security rules allow public reads for 'listings' collection. Current rules might require authentication.");
+          userErrorMessage = "Error de permisos al cargar suscripciones. Contacta al soporte.";
+        } else if (firebaseError.code === 'failed-precondition') {
+           console.warn("Firestore query failed due to missing index. Please create the required composite index in your Firebase console for the 'listings' collection (e.g., for 'isActive' and 'popularity'). The error message from Firebase should contain a link to create it.");
+           userErrorMessage = "Error de configuración de base de datos. Es posible que falte un índice. Revisa la consola para más detalles o contacta al soporte.";
+        }
+        setFetchError(userErrorMessage);
+      } finally {
+        setLoading(false);
+        console.log("Finished fetching popular subscriptions.");
+      }
+    };
+
+    fetchPopularSubscriptions();
+  }, []);
 
   return (
     <>
@@ -284,7 +297,7 @@ export default function LandingPage() {
             </div>
             {loading ? (
               <div className="text-center py-10">
-                <Icons.Logo className="mx-auto h-12 w-12 text-muted-foreground animate-spin mb-4" />
+                <Loader2 className="mx-auto h-12 w-12 text-muted-foreground animate-spin mb-4" />
                 <p className="text-muted-foreground">Cargando suscripciones populares...</p>
               </div>
             ) : fetchError ? (
@@ -311,7 +324,7 @@ export default function LandingPage() {
                       <h3 className="text-xl font-semibold text-foreground mb-1">{sub.serviceName}</h3>
                       {sub.type && <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>}
                       <div className="mt-auto">
-                        <p className="text-2xl font-bold text-primary mb-1">${sub.pricePerSpot.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+                        <p className="text-2xl font-bold text-primary mb-1">${(sub.pricePerSpot ?? 0).toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
                         <p className="text-xs text-muted-foreground mt-1">(Incluye tarifa de servicio SuscripGrupo. Desglose antes del pago. Pagos vía Stripe)</p>
                         <Badge 
                           variant={sub.status === "Full" || sub.spotsAvailable === 0 ? "destructive" : "default"}

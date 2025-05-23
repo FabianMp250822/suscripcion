@@ -11,7 +11,7 @@ import Link from "next/link";
 import { CreateListingDialog } from "@/components/sharer/create-listing-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, orderBy, onSnapshot, type DocumentData, type Unsubscribe } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, type DocumentData, type Unsubscribe, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/hooks/use-auth";
 import { Icons } from "@/components/icons";
 
@@ -23,10 +23,8 @@ interface Listing {
   pricePerSpot: number; // Sharer's desired price
   status: string;
   iconUrl: string;
-  // groupId is often the same as listingId, or a related field.
-  // For now, we'll assume listing.id can serve as groupId for the link.
-  // In a more complex setup, you might have a separate groupId.
-  createdAt?: any; // Firestore Timestamp
+  sharerId?: string; // Added for query
+  createdAt?: Timestamp; // Firestore Timestamp
 }
 
 export default function MyListingsPage() {
@@ -38,11 +36,14 @@ export default function MyListingsPage() {
   useEffect(() => {
     if (!user) {
       setLoading(false);
+      // Optionally, redirect to login or show a message
+      // console.log("User not logged in, cannot fetch listings.");
       return;
     }
 
     setLoading(true);
     const listingsRef = collection(db, "listings");
+    // Query for listings where sharerId is the current user's UID
     const q = query(
       listingsRef,
       where("sharerId", "==", user.uid),
@@ -52,7 +53,18 @@ export default function MyListingsPage() {
     const unsubscribe: Unsubscribe = onSnapshot(q, (querySnapshot) => {
       const fetchedListings: Listing[] = [];
       querySnapshot.forEach((doc) => {
-        fetchedListings.push({ id: doc.id, ...doc.data() } as Listing);
+        const data = doc.data();
+        fetchedListings.push({
+          id: doc.id,
+          serviceName: data.serviceName || "N/A",
+          spotsAvailable: data.spotsAvailable || 0,
+          totalSpots: data.totalSpots || 0,
+          pricePerSpot: data.pricePerSpot || 0, // Default to 0 if undefined
+          status: data.status || "Unknown",
+          iconUrl: data.iconUrl || `https://placehold.co/64x64.png?text=${(data.serviceName || "S").substring(0,1)}`,
+          sharerId: data.sharerId,
+          createdAt: data.createdAt,
+        } as Listing);
       });
       setListings(fetchedListings);
       setLoading(false);
@@ -69,8 +81,6 @@ export default function MyListingsPage() {
     return () => unsubscribe(); // Cleanup subscription on unmount
   }, [user, toast]);
 
-  // The onListingCreated callback in CreateListingDialog now directly writes to Firestore.
-  // This page will update in real-time due to the onSnapshot listener.
 
   return (
     <div className="space-y-6">
@@ -102,7 +112,7 @@ export default function MyListingsPage() {
                     {listing.spotsAvailable} of {listing.totalSpots} spots available
                   </CardDescription>
                 </div>
-                <Badge 
+                <Badge
                     variant={listing.status === 'Recruiting' ? 'default' : listing.status === 'Full' ? 'secondary' : 'outline'}
                     className={
                         listing.status === 'Recruiting' ? 'bg-blue-500/20 text-blue-700 border-blue-500/30' :
@@ -114,7 +124,7 @@ export default function MyListingsPage() {
                 </Badge>
               </CardHeader>
               <CardContent className="flex-1">
-                <p className="text-2xl font-semibold">${listing.pricePerSpot.toFixed(2)} <span className="text-sm text-muted-foreground">/ desired per spot / month</span></p>
+                <p className="text-2xl font-semibold">${(listing.pricePerSpot ?? 0).toFixed(2)} <span className="text-sm text-muted-foreground">/ desired per spot / month</span></p>
                 <p className="text-xs text-muted-foreground mt-1"> (Subscribers will see a final price including a service fee)</p>
                 <div className="mt-2 flex items-center text-sm text-muted-foreground">
                   <Users className="mr-1 h-4 w-4" />
@@ -127,7 +137,7 @@ export default function MyListingsPage() {
                     <Eye className="mr-2 h-4 w-4" /> Manage
                   </Link>
                 </Button>
-                <Button variant="secondary" onClick={() => console.log("TODO: Implement Edit for", listing.id)}>
+                <Button variant="secondary" onClick={() => console.log("TODO: Implement Edit for", listing.id)} disabled>
                   <Edit3 className="mr-2 h-4 w-4" /> Edit
                 </Button>
               </CardFooter>

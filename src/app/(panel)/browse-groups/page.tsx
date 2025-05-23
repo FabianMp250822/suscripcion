@@ -11,21 +11,21 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Icons } from "@/components/icons";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, orderBy, limit, getDocs, type DocumentData } from "firebase/firestore";
+import { collection, query, where, orderBy, limit, getDocs, type DocumentData, Timestamp } from "firebase/firestore";
 
 interface GroupListing {
   id: string;
   serviceName: string;
   spotsAvailable: number;
   totalSpots: number;
-  pricePerSpot: number; // FINAL PRICE for subscriber (or sharer's price if fee logic is backend)
+  pricePerSpot: number; // FINAL PRICE for subscriber
   status: string; // e.g., "Recruiting", "Full"
   iconUrl: string;
-  sharerName: string;
-  sharerAvatar: string;
+  sharerName?: string;
+  sharerAvatar?: string;
   ownerReputation?: number;
   totalRatings?: number;
-  createdAt?: any; // Firestore Timestamp
+  createdAt?: Timestamp;
 }
 
 const StarRating = ({ rating, totalRatings }: { rating?: number; totalRatings?: number }) => {
@@ -33,7 +33,7 @@ const StarRating = ({ rating, totalRatings }: { rating?: number; totalRatings?: 
     return <p className="text-xs text-muted-foreground">Sin calificaciones</p>;
   }
   const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 >= 0.5; // Simple half-star logic, can be adjusted
+  const halfStar = rating % 1 >= 0.5; 
   const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
 
   return (
@@ -41,9 +41,9 @@ const StarRating = ({ rating, totalRatings }: { rating?: number; totalRatings?: 
       {[...Array(fullStars)].map((_, i) => (
         <Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-yellow-400" />
       ))}
-      {halfStar && <Star key="half" className="h-4 w-4 text-yellow-400 fill-yellow-200" />} {/* Basic half star */}
+      {halfStar && <Star key="half" className="h-4 w-4 text-yellow-400 fill-yellow-200" />}
       {[...Array(emptyStars)].map((_, i) => (
-        <Star key={`empty-${i}`} className="h-4 w-4 text-yellow-400" /> // Empty star outline
+        <Star key={`empty-${i}`} className="h-4 w-4 text-yellow-400" />
       ))}
       {totalRatings !== undefined && <span className="ml-1 text-xs text-muted-foreground">({totalRatings})</span>}
     </div>
@@ -54,46 +54,48 @@ const StarRating = ({ rating, totalRatings }: { rating?: number; totalRatings?: 
 export default function BrowseGroupsPage() {
   const [availableGroups, setAvailableGroups] = useState<GroupListing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState(""); // For future search implementation
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true);
       try {
         const listingsRef = collection(db, "listings");
-        // Query for active listings, prioritizing by reputation then creation date
-        // You might want to add more specific status filters e.g. where("status", "==", "Recruiting")
         const q = query(
           listingsRef,
-          where("spotsAvailable", ">", 0), // Only show listings with available spots
-          orderBy("ownerReputation", "desc"), // Optional: if ownerReputation is implemented
+          where("spotsAvailable", ">", 0),
+          orderBy("ownerReputation", "desc"), 
           orderBy("createdAt", "desc"),
-          limit(20) // Limit the number of listings fetched
+          limit(20)
         );
         
         const querySnapshot = await getDocs(q);
         const fetchedListings: GroupListing[] = [];
         querySnapshot.forEach((doc) => {
-          // Assuming pricePerSpot stored in Firestore is the sharer's desired price.
-          // In a real app, the final subscriber price (including service fee)
-          // might be calculated here or fetched if stored separately.
-          // For now, we'll simulate a service fee for display on this page.
           const data = doc.data() as DocumentData;
           const sharerPrice = data.pricePerSpot || 0;
-          // SIMULATED SERVICE FEE (e.g., 15%) - REPLACE WITH ACTUAL LOGIC
-          const serviceFee = sharerPrice * 0.15; 
+          const serviceFeePercentage = 0.15; // Example 15% service fee
+          const serviceFee = sharerPrice * serviceFeePercentage; 
           const finalPrice = sharerPrice + serviceFee;
 
           fetchedListings.push({ 
             id: doc.id, 
-            ...data,
-            pricePerSpot: finalPrice, // Display final price to subscriber
+            serviceName: data.serviceName || "N/A",
+            spotsAvailable: data.spotsAvailable || 0,
+            totalSpots: data.totalSpots || 0,
+            pricePerSpot: finalPrice,
+            status: data.status || "Unknown",
+            iconUrl: data.iconUrl || `https://placehold.co/64x64.png?text=${(data.serviceName || "S").substring(0,1)}`,
+            sharerName: data.sharerName || "Usuario",
+            sharerAvatar: data.sharerAvatar || 'https://placehold.co/40x40.png?text=S',
+            ownerReputation: data.ownerReputation, // Ensure this field exists or provide default
+            totalRatings: data.totalRatings, // Ensure this field exists
+            createdAt: data.createdAt,
           } as GroupListing);
         });
         setAvailableGroups(fetchedListings);
       } catch (error) {
         console.error("Error fetching listings for browsing: ", error);
-        // Optionally, set an error state and display an error message to the user
       } finally {
         setLoading(false);
       }
@@ -102,7 +104,6 @@ export default function BrowseGroupsPage() {
   }, []);
 
 
-  // TODO: Implement actual search filtering logic
   const filteredGroups = availableGroups.filter(group => 
     group.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -126,7 +127,7 @@ export default function BrowseGroupsPage() {
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button variant="outline" disabled> {/* Filter button disabled for now */}
+                <Button variant="outline" disabled>
                     <Filter className="mr-2 h-4 w-4" /> Filter
                 </Button>
             </div>
@@ -164,7 +165,7 @@ export default function BrowseGroupsPage() {
                 </Badge>
               </CardHeader>
               <CardContent className="flex-1">
-                <p className="text-2xl font-semibold">${group.pricePerSpot.toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
+                <p className="text-2xl font-semibold">${(group.pricePerSpot ?? 0).toFixed(2)} <span className="text-sm text-muted-foreground">/ spot / month</span></p>
                 <p className="text-xs text-muted-foreground mt-1">(Final price. Includes SuscripGrupo service fee. Breakdown shown before payment.)</p>
                 <div className="mt-2 flex items-center text-sm text-muted-foreground">
                   <Users className="mr-1 h-4 w-4" />
