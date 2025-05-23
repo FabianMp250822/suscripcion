@@ -47,11 +47,14 @@ const navItems: NavItem[] = [
   { href: "/earnings", label: "Earnings", icon: Icons.Earnings, allowedRoles: ["sharer"], segment: "earnings" },
   // Subscriber
   { href: "/my-active-subscriptions", label: "Active Subscriptions", icon: Icons.MyActiveSubscriptions, allowedRoles: ["subscriber"], segment: "my-active-subscriptions"},
-  { href: "/payment-history", label: "Payment History", icon: Icons.PaymentHistory, allowedRoles: ["subscriber"], segment: "payment-history" },
+  // Payment History now moved to a general path, but still only relevant for subscribers from sidebar
+  { href: "/payment-history", label: "Payment History", icon: Icons.PaymentHistory, allowedRoles: ["subscriber"], segment: "payment-history" }, 
   // All logged-in users
   { href: "/browse-groups", label: "Browse Groups", icon: Icons.BrowseGroups, allowedRoles: ["admin", "sharer", "subscriber"], segment: "browse-groups"},
   { href: "/messages", label: "Messages", icon: Icons.Messages, allowedRoles: ["admin", "sharer", "subscriber"], segment: "messages"},
   { href: "/my-disputes", label: "My Disputes", icon: Icons.MyDisputes, allowedRoles: ["sharer", "subscriber"], segment: "my-disputes" },
+  // Placeholder for future global user settings/profile page
+  // { href: "/account-settings", label: "Account Settings", icon: Icons.UserCircle, allowedRoles: ["admin", "sharer", "subscriber"], segment: "account-settings"},
 ];
 
 interface PanelLayoutClientProps {
@@ -64,17 +67,29 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   const { user, loading, isAdmin, isSharer, isSubscriber } = useAuth();
 
   useEffect(() => {
+    // Allow access to specific public-like panel pages even if not fully logged in or roles not determined
+    const publicPanelPaths = ["/do-not-sell", "/terms-of-service", "/privacy-policy"];
+    if (publicPanelPaths.includes(pathname)) {
+      return;
+    }
+
     if (!loading && !user && pathname !== "/login") {
       router.replace("/login");
     }
     if (!loading && user && pathname === "/login") {
-        if (isAdmin) router.replace("/users");
-        else if (isSharer) router.replace("/my-listings");
-        else router.replace("/browse-groups");
+        if (isAdmin) router.replace("/users"); // Admin default
+        else if (isSharer) router.replace("/my-listings"); // Sharer default
+        else router.replace("/browse-groups"); // Subscriber default
     }
   }, [user, loading, router, pathname, isAdmin, isSharer]);
 
-  if (loading || (!user && pathname !== "/login")) {
+
+  // For public panel paths, we might not want to show the full loading skeleton, or handle it differently
+  const publicPanelPaths = ["/do-not-sell", "/terms-of-service", "/privacy-policy"];
+  if (publicPanelPaths.includes(pathname)) {
+     // Render children directly for these paths, assuming they don't need the full sidebar/auth context for their core content
+     // Or, provide a simpler layout if needed
+  } else if (loading || (!user && pathname !== "/login")) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center">
@@ -89,39 +104,49 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
       </div>
     );
   }
-
-  if (pathname === "/login") {
+  
+  // If it's the login page or specific public panel pages, render children without the sidebar structure.
+  if (pathname === "/login" || publicPanelPaths.includes(pathname)) {
     return <>{children}</>;
   }
+
 
   const currentUserRoles: ("admin" | "sharer" | "subscriber")[] = [];
   if (isAdmin) {
     currentUserRoles.push("admin");
+    // Admins can also browse groups, so add subscriber role for that nav item.
+    // This is a bit of a hack; better role/permission system would be ideal.
+    // For nav filtering, if they are admin, they can see admin items.
+    // For common items like "Browse Groups", admin is already included in allowedRoles.
   } else {
     if (isSharer) {
       currentUserRoles.push("sharer");
     }
-    // A user can be a subscriber even if they are also a sharer, or if they are neither (default)
-    // Ensure subscriber role is added if they are not admin, and are either explicitly subscriber or don't have other specific non-admin roles
-    if (isSubscriber || (!isSharer && !isAdmin)) {
+    // A user is subscriber if they are not admin and have the subscriber role,
+    // or if they are a sharer (sharers are also subscribers)
+    // or if they have no other specific roles (defaulting to subscriber).
+    if (isSubscriber || isSharer || (!isAdmin && !isSharer && !isSubscriber)) { // ensure default non-admin is subscriber for nav
        currentUserRoles.push("subscriber");
     }
   }
    // Fallback for users who might not have roles set yet but are authenticated and not admin
   if (user && currentUserRoles.length === 0 && !isAdmin) {
-    currentUserRoles.push("subscriber");
-    if (isSharer) currentUserRoles.push("sharer"); // ensure sharer is also added if applicable
+    currentUserRoles.push("subscriber"); // Default to subscriber
+    if (isSharer) currentUserRoles.push("sharer"); 
   }
 
 
   const accessibleNavItems = navItems.filter(item => {
-    if (item.allowedRoles.length === 0) return true;
+    if (item.allowedRoles.length === 0) return true; // Item accessible to all authenticated users
+    if (isAdmin && item.allowedRoles.includes("admin")) return true; // Admin sees admin items
+    // For non-admins, check if any of their roles match the item's allowed roles
     return item.allowedRoles.some(role => currentUserRoles.includes(role));
   });
 
   const getActiveSegment = () => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 0) {
+        // Specific logic for "Manage Group" under "My Listings" for Sharers
         if (segments[0] === 'manage-group' && segments.length > 1 && isSharer) {
             return 'my-listings';
         }
@@ -135,6 +160,7 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
     if (item.segment) {
       return activeSegment === item.segment;
     }
+    // Fallback for exact path match if segment isn't defined or doesn't match
     return pathname === item.href;
   };
 

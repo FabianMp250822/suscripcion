@@ -4,26 +4,43 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth, db } from "@/lib/firebase/config"; // Added db
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore"; // Added Firestore functions
+import { auth, db } from "@/lib/firebase/config";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [agreeToPrivacy, setAgreeToPrivacy] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  const canSubmitSignUp = agreeToTerms && agreeToPrivacy;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
+
+    if (!isLogin && !canSubmitSignUp) {
+        toast({
+            title: "Consent Required",
+            description: "You must agree to the Terms of Service and Privacy Policy to sign up.",
+            variant: "destructive",
+        });
+        setLoading(false);
+        return;
+    }
+
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
@@ -35,6 +52,7 @@ export default function LoginPage() {
         if (newUser) {
             const userDocRef = doc(db, "users", newUser.uid);
             let userRoles = ['subscriber', 'sharer'];
+            // Simple logic to assign admin role based on email for demo purposes
             if (email.includes('admin')) {
                 userRoles = ['admin'];
             }
@@ -45,10 +63,16 @@ export default function LoginPage() {
                 photoURL: newUser.photoURL,
                 roles: userRoles,
                 createdAt: serverTimestamp(),
+                // Placeholder for other user preferences or data
             });
         }
         toast({ title: "Sign Up Successful", description: "Your account has been created. Please log in." });
-        setIsLogin(true);
+        setIsLogin(true); // Switch to login view after successful sign-up
+        // Clear fields for login
+        // setEmail("");
+        // setPassword("");
+        setAgreeToTerms(false);
+        setAgreeToPrivacy(false);
       }
     } catch (error: any) {
       console.error("Authentication error:", error.code, error.message);
@@ -58,24 +82,16 @@ export default function LoginPage() {
       if (error.code) {
         switch (error.code) {
           case 'auth/invalid-credential':
+          case 'auth/user-not-found': // Consolidate for login
+          case 'auth/wrong-password': // Consolidate for login
             toastDescription = isLogin ?
               "Incorrect email or password. If you don't have an account, please click 'Sign Up' below." :
               "Could not process your request. Please check the details and try again.";
             break;
-          case 'auth/user-not-found':
-            toastTitle = "Login Failed";
-            toastDescription = "No account found with this email. Please 'Sign Up' or check the email address.";
-            break;
-          case 'auth/wrong-password':
-            toastTitle = "Login Failed";
-            toastDescription = "Incorrect password. Please try again.";
-            break;
           case 'auth/email-already-in-use':
-            toastTitle = "Sign Up Failed";
             toastDescription = "This email address is already registered. Please try logging in.";
             break;
           case 'auth/weak-password':
-            toastTitle = "Sign Up Failed";
             toastDescription = "The password is too weak. It must be at least 6 characters long.";
             break;
           case 'auth/invalid-email':
@@ -85,7 +101,7 @@ export default function LoginPage() {
             toastDescription = error.message || toastDescription;
         }
       } else {
-        toastDescription = error.message || toastDescription;
+         toastDescription = error.message || toastDescription;
       }
       
       toast({
@@ -111,7 +127,7 @@ export default function LoginPage() {
         if (!userDocSnap.exists()) {
           // New user via Google
           let userRoles = ['subscriber', 'sharer'];
-          if (user.email && user.email.includes('admin')) {
+          if (user.email && user.email.includes('admin')) { // Simplified admin role assignment
             userRoles = ['admin'];
           }
           await setDoc(userDocRef, {
@@ -145,11 +161,11 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4">
+          <Link href="/" className="inline-block mx-auto mb-4">
             <Icons.Logo className="h-16 w-16 text-primary" />
-          </div>
+          </Link>
           <CardTitle className="text-3xl font-bold">{isLogin ? "Welcome Back" : "Create Account"}</CardTitle>
-          <CardDescription>{isLogin ? "Sign in to access your dashboard." : "Sign up to get started."}</CardDescription>
+          <CardDescription>{isLogin ? "Sign in to access your dashboard." : "Sign up to get started with Firebase Subscription Hub."}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -177,10 +193,54 @@ export default function LoginPage() {
                 className="text-base"
               />
             </div>
-            <Button type="submit" className="w-full text-base py-3" disabled={loading}>
-              {loading ? (
-                <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+
+            {!isLogin && (
+              <div className="space-y-3">
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="terms" 
+                    checked={agreeToTerms} 
+                    onCheckedChange={(checked) => setAgreeToTerms(Boolean(checked))}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="terms"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      I accept the{" "}
+                      <Link href="/terms-of-service" target="_blank" className="underline text-primary hover:text-primary/80">
+                        Terms of Service
+                      </Link>
+                    </label>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <Checkbox 
+                    id="privacy" 
+                    checked={agreeToPrivacy} 
+                    onCheckedChange={(checked) => setAgreeToPrivacy(Boolean(checked))}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="privacy"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      I accept the{" "}
+                      <Link href="/privacy-policy" target="_blank" className="underline text-primary hover:text-primary/80">
+                        Privacy Policy
+                      </Link>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <Button 
+                type="submit" 
+                className="w-full text-base py-3" 
+                disabled={loading || (!isLogin && !canSubmitSignUp)}
+            >
+              {loading && <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />}
               {isLogin ? "Sign In" : "Sign Up"}
             </Button>
           </form>
@@ -195,11 +255,8 @@ export default function LoginPage() {
             </div>
           </div>
           <Button variant="outline" className="w-full mt-6 text-base py-3" onClick={handleGoogleSignIn} disabled={loading}>
-            {loading ? (
-              <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.7 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
-            )}
+            {loading && <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />}
+            <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 381.7 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>
             Google
           </Button>
         </CardContent>
