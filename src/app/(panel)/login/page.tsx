@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Icons } from "@/components/icons";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -18,6 +19,12 @@ import Link from "next/link";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [alias, setAlias] = useState("");
+  const [country, setCountry] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [photoURL, setPhotoURL] = useState(""); // For now, a URL input
+
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -25,20 +32,43 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const canSubmitSignUp = agreeToTerms && agreeToPrivacy;
+  const canSubmitSignUp = agreeToTerms && agreeToPrivacy && fullName && alias && country && email && password;
+
+  const handleUserCreation = async (user: any, isGoogleSignIn: boolean = false) => {
+    const userDocRef = doc(db, "users", user.uid);
+    let userRoles = ['subscriber', 'sharer'];
+    if (user.email && user.email.includes('admin')) {
+      userRoles = ['admin'];
+    }
+
+    const userData = {
+      uid: user.uid,
+      email: user.email,
+      displayName: isGoogleSignIn ? user.displayName : alias, // Use alias for email/pass signup
+      fullName: isGoogleSignIn ? user.displayName : fullName, // Use displayName from Google or fullName from form
+      alias: isGoogleSignIn ? (user.displayName || user.email?.split('@')[0] || "user") : alias,
+      country: isGoogleSignIn ? "" : country, // Country might not be available from Google easily
+      phoneNumber: isGoogleSignIn ? (user.phoneNumber || "") : phoneNumber,
+      photoURL: user.photoURL || photoURL, // Use Google's photoURL if available or from form
+      roles: userRoles,
+      createdAt: serverTimestamp(),
+      publicKey: "placeholder_public_key", // Placeholder for E2EE public key
+    };
+    await setDoc(userDocRef, userData);
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
 
     if (!isLogin && !canSubmitSignUp) {
-        toast({
-            title: "Consentimiento Requerido",
-            description: "Debes aceptar los Términos de Servicio y la Política de Privacidad para registrarte.",
-            variant: "destructive",
-        });
-        setLoading(false);
-        return;
+      toast({
+        title: "Campos Requeridos Incompletos",
+        description: "Por favor, completa todos los campos obligatorios y acepta los términos y la política de privacidad.",
+        variant: "destructive",
+      });
+      setLoading(false);
+      return;
     }
 
     try {
@@ -50,25 +80,18 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUser = userCredential.user;
         if (newUser) {
-            const userDocRef = doc(db, "users", newUser.uid);
-            let userRoles = ['subscriber', 'sharer'];
-            // Simple logic to assign admin role based on email for demo purposes
-            if (email.includes('admin')) {
-                userRoles = ['admin'];
-            }
-            await setDoc(userDocRef, {
-                uid: newUser.uid,
-                email: newUser.email,
-                displayName: newUser.displayName || email.split('@')[0],
-                photoURL: newUser.photoURL,
-                roles: userRoles,
-                createdAt: serverTimestamp(),
-            });
+          await handleUserCreation(newUser);
         }
         toast({ title: "Registro Exitoso", description: "Tu cuenta ha sido creada. Por favor, inicia sesión." });
-        setIsLogin(true); 
+        setIsLogin(true);
         setAgreeToTerms(false);
         setAgreeToPrivacy(false);
+        // Clear additional fields
+        setFullName("");
+        setAlias("");
+        setCountry("");
+        setPhoneNumber("");
+        setPhotoURL("");
       }
     } catch (error: any) {
       console.error("Error de autenticación:", error.code, error.message);
@@ -82,11 +105,11 @@ export default function LoginPage() {
               "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo." :
               "No se pudo procesar tu solicitud. Por favor, verifica los detalles e inténtalo de nuevo.";
             break;
-          case 'auth/user-not-found': 
-             toastDescription = "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo.";
+          case 'auth/user-not-found':
+            toastDescription = "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo.";
             break;
-          case 'auth/wrong-password': 
-             toastDescription = "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo.";
+          case 'auth/wrong-password':
+            toastDescription = "Correo o contraseña incorrectos. Si no tienes una cuenta, por favor haz clic en 'Regístrate' abajo.";
             break;
           case 'auth/email-already-in-use':
             toastDescription = "Esta dirección de correo ya está registrada. Por favor, intenta iniciar sesión.";
@@ -101,9 +124,9 @@ export default function LoginPage() {
             toastDescription = error.message || toastDescription;
         }
       } else {
-         toastDescription = error.message || toastDescription;
+        toastDescription = error.message || toastDescription;
       }
-      
+
       toast({
         title: toastTitle,
         description: toastDescription,
@@ -125,19 +148,7 @@ export default function LoginPage() {
         const userDocSnap = await getDoc(userDocRef);
 
         if (!userDocSnap.exists()) {
-          // New user via Google
-          let userRoles = ['subscriber', 'sharer'];
-          if (user.email && user.email.includes('admin')) { 
-            userRoles = ['admin'];
-          }
-          await setDoc(userDocRef, {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName || (user.email ? user.email.split('@')[0] : 'Usuario'),
-            photoURL: user.photoURL,
-            roles: userRoles,
-            createdAt: serverTimestamp(),
-          });
+          await handleUserCreation(user, true); // Pass true for Google sign-in
           toast({ title: "Registro Exitoso", description: "¡Bienvenido! Tu cuenta ha sido creada." });
         } else {
           // Existing user
@@ -164,13 +175,52 @@ export default function LoginPage() {
           <Link href="/" className="inline-block mx-auto mb-4">
             <Icons.Logo className="h-16 w-16 text-primary" />
           </Link>
-          <CardTitle className="text-3xl font-bold">{isLogin ? "Bienvenido de Nuevo" : "Crear Cuenta"}</CardTitle>
-          <CardDescription>{isLogin ? "Inicia sesión para acceder a tu panel." : "Regístrate para empezar con SuscripGrupo."}</CardDescription>
+          <CardTitle className="text-3xl font-bold">{isLogin ? "Bienvenido de Nuevo" : "Crear Cuenta en SuscripGrupo"}</CardTitle>
+          <CardDescription>{isLogin ? "Inicia sesión para acceder a tu panel." : "Regístrate para empezar a compartir y ahorrar."}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico</Label>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="fullName">Nombre Completo *</Label>
+                  <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Juan Pérez" required />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="alias">Alias / Nombre de Usuario *</Label>
+                  <Input id="alias" value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="juanperez88" required />
+                  <p className="text-xs text-muted-foreground">Este será tu nombre público en la plataforma.</p>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="country">País de Residencia *</Label>
+                  <Select value={country} onValueChange={setCountry}>
+                    <SelectTrigger id="country" required>
+                      <SelectValue placeholder="Selecciona tu país" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CO">Colombia</SelectItem>
+                      <SelectItem value="US">Estados Unidos</SelectItem>
+                      <SelectItem value="ES">España</SelectItem>
+                      <SelectItem value="MX">México</SelectItem>
+                      <SelectItem value="AR">Argentina</SelectItem>
+                      {/* Add more countries as needed */}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="phoneNumber">Número de Teléfono</Label>
+                  <Input id="phoneNumber" type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="+57 3001234567" />
+                  <p className="text-xs text-muted-foreground">Opcional. Para verificación y seguridad.</p>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="photoURL">URL de Foto de Perfil</Label>
+                  <Input id="photoURL" type="url" value={photoURL} onChange={(e) => setPhotoURL(e.target.value)} placeholder="https://ejemplo.com/foto.png" />
+                   <p className="text-xs text-muted-foreground">Opcional. Pega la URL de una imagen.</p>
+                </div>
+              </>
+            )}
+            <div className="space-y-1">
+              <Label htmlFor="email">Correo Electrónico *</Label>
               <Input
                 id="email"
                 type="email"
@@ -181,12 +231,12 @@ export default function LoginPage() {
                 className="text-base"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Contraseña</Label>
+            <div className="space-y-1">
+              <Label htmlFor="password">Contraseña *</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="•••••••• (mín. 6 caracteres)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -195,11 +245,11 @@ export default function LoginPage() {
             </div>
 
             {!isLogin && (
-              <div className="space-y-3">
+              <div className="space-y-3 pt-2">
                 <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="terms" 
-                    checked={agreeToTerms} 
+                  <Checkbox
+                    id="terms"
+                    checked={agreeToTerms}
                     onCheckedChange={(checked) => setAgreeToTerms(Boolean(checked))}
                   />
                   <div className="grid gap-1.5 leading-none">
@@ -210,14 +260,14 @@ export default function LoginPage() {
                       Acepto los{" "}
                       <Link href="/terms-of-service" target="_blank" className="underline text-primary hover:text-primary/80">
                         Términos de Servicio
-                      </Link>
+                      </Link> *
                     </label>
                   </div>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="privacy" 
-                    checked={agreeToPrivacy} 
+                  <Checkbox
+                    id="privacy"
+                    checked={agreeToPrivacy}
                     onCheckedChange={(checked) => setAgreeToPrivacy(Boolean(checked))}
                   />
                   <div className="grid gap-1.5 leading-none">
@@ -228,17 +278,17 @@ export default function LoginPage() {
                       Acepto la{" "}
                       <Link href="/privacy-policy" target="_blank" className="underline text-primary hover:text-primary/80">
                         Política de Privacidad
-                      </Link>
+                      </Link> *
                     </label>
                   </div>
                 </div>
               </div>
             )}
 
-            <Button 
-                type="submit" 
-                className="w-full text-base py-3" 
-                disabled={loading || (!isLogin && !canSubmitSignUp)}
+            <Button
+              type="submit"
+              className="w-full text-base py-3"
+              disabled={loading || (!isLogin && !canSubmitSignUp)}
             >
               {loading && <Icons.Logo className="mr-2 h-4 w-4 animate-spin" />}
               {isLogin ? "Iniciar Sesión" : "Regístrate"}
