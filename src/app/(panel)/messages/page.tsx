@@ -1,16 +1,19 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, Send, ShieldAlert, MessageSquare as MessageSquareIcon } from "lucide-react"; // Renamed to avoid conflict
+import { ShieldAlert, MessageSquare as MessageSquareIcon, Loader2 } from "lucide-react"; // Renamed to avoid conflict
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useAuth } from "@/hooks/use-auth"; // To get current user for sending messages
-// TODO: Import Firestore functions for actual chat implementation
+import { useAuth } from "@/hooks/use-auth";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, onSnapshot, orderBy, doc, getDoc, addDoc, serverTimestamp, updateDoc, arrayUnion } from "firebase/firestore";
+import type { Unsubscribe, Timestamp } from "firebase/firestore";
+
 
 // Interface for a conversation (chat room)
 interface Conversation {
@@ -18,7 +21,7 @@ interface Conversation {
   participantIds: string[];
   participants: { [key: string]: { alias: string; photoURL: string; online?: boolean } }; // Store participant details for display
   lastMessage?: string; // Placeholder for actual ciphertext or snippet
-  lastMessageTimestamp?: Date; // For sorting conversations
+  lastMessageTimestamp?: Timestamp; // For sorting conversations
   unreadCount?: number; // For UI indication
 }
 
@@ -27,61 +30,18 @@ interface Message {
   id: string; // Firestore auto-ID
   conversationId: string;
   senderId: string;
-  timestamp: Date;
+  timestamp: Timestamp;
   text: string; // Placeholder for actual ciphertext
   // In a real E2EE system, this would be `ciphertext: string;`
 }
 
 // Mock data - This will be replaced by Firestore data
 const initialMockConversations: Conversation[] = [
-  {
-    id: "user1_user2",
-    participantIds: ["user1", "user2"],
-    participants: {
-      user1: { alias: "Alice W.", photoURL: "https://placehold.co/40x40.png?text=AW", online: true },
-      user2: { alias: "You", photoURL: "https://placehold.co/40x40.png?text=U" }, // 'You' would be dynamically determined
-    },
-    lastMessage: "Hey, about the Netflix spot...",
-    lastMessageTimestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-    unreadCount: 2,
-  },
-  {
-    id: "user2_user3",
-    participantIds: ["user2", "user3"],
-    participants: {
-      user2: { alias: "You", photoURL: "https://placehold.co/40x40.png?text=U" },
-      user3: { alias: "Bob B.", photoURL: "https://placehold.co/40x40.png?text=BB", online: false },
-    },
-    lastMessage: "Payment sent for Spotify!",
-    lastMessageTimestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // Yesterday
-  },
-  {
-    id: "support_user2",
-    participantIds: ["support", "user2"],
-    participants: {
-      support: { alias: "Support Team", photoURL: "https://placehold.co/40x40.png?text=ST", online: true },
-      user2: { alias: "You", photoURL: "https://placehold.co/40x40.png?text=U" },
-    },
-    lastMessage: "Your query #123 has been updated.",
-    lastMessageTimestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    unreadCount: 1,
-  },
+  // Example data removed
 ];
 
 const initialMockMessages: { [conversationId: string]: Message[] } = {
-  "user1_user2": [
-    { id: "m1", conversationId: "user1_user2", senderId: "user1", text: "Hey, is the Netflix spot still available?", timestamp: new Date(Date.now() - 1000 * 60 * 7) },
-    { id: "m2", conversationId: "user1_user2", senderId: "user2", text: "Yes, it is! Are you interested?", timestamp: new Date(Date.now() - 1000 * 60 * 6) },
-    { id: "m3", conversationId: "user1_user2", senderId: "user1", text: "Great! How do I proceed?", timestamp: new Date(Date.now() - 1000 * 60 * 5) },
-  ],
-  "user2_user3": [
-    { id: "m5", conversationId: "user2_user3", senderId: "user3", text: "Just sent the payment for the Spotify group. Please confirm.", timestamp: new Date(Date.now() - 1000 * 60 * 60 * 25) },
-    { id: "m6", conversationId: "user2_user3", senderId: "user2", text: "Received! Thanks Bob.", timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) },
-  ],
-   "support_user2": [
-    { id: "m8", conversationId: "support_user2", senderId: "support", text: "Hello, regarding your query #123 about payment failure: We've identified the issue and it should now be resolved. Please try again.", timestamp: new Date(Date.now() - 1000 * 60 * 32) },
-    { id: "m9", conversationId: "support_user2", senderId: "user2", text: "Okay, thank you for the update!", timestamp: new Date(Date.now() - 1000 * 60 * 30) },
-  ]
+  // Example data removed
 };
 
 
@@ -99,7 +59,9 @@ export default function MessagesPage() {
     // Query where participantIds array contains user.uid
     // For each conversation, fetch participant details (alias, photoURL) from 'users' collection if not already denormalized.
     // Order conversations by lastMessageTimestamp.
-    setConversations(initialMockConversations); // Using mock data for now
+    
+    // Simulating fetch, will be empty now
+    setConversations(initialMockConversations); 
     if (initialMockConversations.length > 0 && !selectedConversationId) {
       setSelectedConversationId(initialMockConversations[0].id);
     }
@@ -112,49 +74,66 @@ export default function MessagesPage() {
       // TODO: Fetch messages for the selectedConversationId from its 'messages' subcollection in Firestore
       // Order messages by timestamp.
       // Mark messages as read.
-      setMessages(initialMockMessages[selectedConversationId] || []); // Using mock data
+      
+      // Simulating fetch, will be empty now
+      setMessages(initialMockMessages[selectedConversationId] || []); 
       setLoadingMessages(false);
     } else {
       setMessages([]);
     }
   }, [selectedConversationId, user]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversationId || !user) return;
+    if (!newMessage.trim() || !selectedConversationId || !user || !userProfile) return;
 
     // In a real E2EE system:
     // 1. Get recipient's public key.
     // 2. Encrypt `newMessage` using recipient's public key.
     // 3. The encrypted text is what you'd save as `ciphertext`.
+    
+    // TODO: Replace with actual Firestore save logic
     const messageData = {
       conversationId: selectedConversationId,
       senderId: user.uid,
       text: newMessage, // This would be `ciphertext`
-      timestamp: new Date(),
+      timestamp: serverTimestamp(), // Use Firestore server timestamp
     };
 
-    // TODO: Save `messageData` to the 'messages' subcollection of the selectedConversationId in Firestore.
-    // TODO: Update `lastMessage` and `lastMessageTimestamp` in the parent conversation document.
-    console.log("Sending message (mock):", messageData);
+    try {
+        // Example: await addDoc(collection(db, `conversations/${selectedConversationId}/messages`), messageData);
+        // Example: await updateDoc(doc(db, "conversations", selectedConversationId), {
+        //   lastMessage: newMessage, // or ciphertext snippet
+        //   lastMessageTimestamp: serverTimestamp(),
+        // });
+        console.log("Sending message (mock, to be replaced with Firestore):", messageData);
 
-    // Optimistically update UI (remove when Firestore listener is in place)
-    const optimisticMessage: Message = { ...messageData, id: `temp_${Date.now()}` };
-    setMessages(prev => [...prev, optimisticMessage]);
-    
-    // Update mock conversation's last message (remove when Firestore listener is in place)
-    setConversations(prevConvos => prevConvos.map(c => 
-      c.id === selectedConversationId 
-      ? {...c, lastMessage: newMessage, lastMessageTimestamp: new Date()}
-      : c
-    ).sort((a,b) => (b.lastMessageTimestamp?.getTime() || 0) - (a.lastMessageTimestamp?.getTime() || 0)));
+        // Optimistically update UI - remove when Firestore listener for messages is in place
+        const optimisticMessage: Message = { 
+            ...messageData, 
+            id: `temp_${Date.now()}`,
+            timestamp: new Date() as unknown as Timestamp // For optimistic UI
+        };
+        setMessages(prev => [...prev, optimisticMessage]);
+        
+        setConversations(prevConvos => prevConvos.map(c => 
+          c.id === selectedConversationId 
+          ? {...c, lastMessage: newMessage, lastMessageTimestamp: new Date() as unknown as Timestamp } // For optimistic UI
+          : c
+        ).sort((a,b) => (b.lastMessageTimestamp?.toDate().getTime() || 0) - (a.lastMessageTimestamp?.toDate().getTime() || 0)));
 
-    setNewMessage("");
+        setNewMessage("");
+    } catch (error) {
+        console.error("Error sending message: ", error);
+        // Potentially show a toast to the user
+    }
   };
 
   const getOtherParticipant = (conversation: Conversation) => {
     if (!user || !conversation.participantIds) return null;
-    const otherId = conversation.participantIds.find(id => id !== user.uid);
+    // Ensure user.uid is used if userProfile is not yet loaded.
+    const currentUserId = userProfile?.uid || user.uid;
+    const otherId = conversation.participantIds.find(id => id !== currentUserId);
     return otherId ? conversation.participants[otherId] : null;
   };
   
@@ -163,22 +142,28 @@ export default function MessagesPage() {
 
 
   if (loadingConversations) {
-    return <div className="flex justify-center items-center h-full"><p>Loading conversations...</p></div>;
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-3" />
+        <p className="text-muted-foreground">Cargando conversaciones...</p>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col h-[calc(100vh-var(--header-height,100px)-2rem)] md:h-[calc(100vh-var(--header-height,60px)-4rem)]">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
-        <p className="text-muted-foreground">Communicate with other users and group members.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Mensajes</h1>
+        <p className="text-muted-foreground">Comunícate directamente con otros usuarios y miembros de tus grupos. Pagos vía Stripe.</p>
       </div>
 
       <Alert variant="destructive" className="mb-6">
         <ShieldAlert className="h-5 w-5" />
-        <AlertTitle className="font-semibold">Important: Chat Security Placeholder</AlertTitle>
+        <AlertTitle className="font-semibold">Importante: Seguridad del Chat (Demostración)</AlertTitle>
         <AlertDescription>
-          This chat interface is a **demonstration only**. True End-to-End Encryption (E2EE) requires complex client-side cryptographic implementations (like key generation, secure private key storage, encryption/decryption).
-          **Messages sent here are NOT currently encrypted and are visible in plain text in this mock setup.** Do not share sensitive information.
+          Esta interfaz de chat es una **demostración funcional básica** y **NO IMPLEMENTA CIFRADO DE EXTREMO A EXTREMO (E2EE)**.
+          Los mensajes enviados aquí viajan y se almacenan en texto plano (simulado). 
+          **NO COMPARTAS INFORMACIÓN SENSIBLE.** La implementación de E2EE robusto es un proceso complejo de criptografía del lado del cliente.
         </AlertDescription>
       </Alert>
 
@@ -186,15 +171,19 @@ export default function MessagesPage() {
         {/* Conversations List */}
         <Card className="shadow-lg md:col-span-1 flex flex-col">
           <CardHeader>
-            <CardTitle>Conversations</CardTitle>
-            <CardDescription>Your recent chats</CardDescription>
+            <CardTitle>Conversaciones</CardTitle>
+            <CardDescription>Tus chats recientes</CardDescription>
           </CardHeader>
           <CardContent className="p-0 flex-1 min-h-0">
             <ScrollArea className="h-full">
               <div className="p-4 space-y-2">
+                {conversations.length === 0 && !loadingConversations && (
+                    <p className="text-center text-muted-foreground p-4">No tienes conversaciones todavía. Intenta iniciar una desde el perfil de un usuario o un grupo.</p>
+                )}
                 {conversations.map(conv => {
                   const otherP = getOtherParticipant(conv);
-                  if (!otherP) return null; // Should not happen if data is correct
+                  // If otherP is null (e.g., a chat with oneself or data issue), skip rendering
+                  if (!otherP) return null; 
                   return (
                     <Button
                       key={conv.id}
@@ -219,7 +208,6 @@ export default function MessagesPage() {
                     </Button>
                   );
                 })}
-                 {conversations.length === 0 && <p className="text-center text-muted-foreground p-4">No conversations yet.</p>}
               </div>
             </ScrollArea>
           </CardContent>
@@ -238,16 +226,27 @@ export default function MessagesPage() {
                     </Avatar>
                     <div>
                         <CardTitle className="text-lg">{otherParticipantDetails.alias}</CardTitle>
-                        <CardDescription className="text-xs">{otherParticipantDetails.online ? "Online" : "Offline"}</CardDescription>
+                        <CardDescription className="text-xs">{otherParticipantDetails.online ? "En línea" : "Desconectado"}</CardDescription>
                     </div>
                 </div>
               </CardHeader>
               <CardContent className="flex-1 p-0 min-h-0">
                 <ScrollArea className="h-full p-4 space-y-4">
-                  {loadingMessages ? <p className="text-center text-muted-foreground">Loading messages...</p> :
-                   messages.length === 0 ? <p className="text-center text-muted-foreground">No messages in this conversation yet. Say hi!</p> :
+                  {loadingMessages ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+                        <p className="text-muted-foreground">Cargando mensajes...</p>
+                    </div>
+                   ) : messages.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <MessageSquareIcon className="w-12 h-12 text-muted-foreground mb-3" />
+                        <p className="text-center text-muted-foreground">No hay mensajes en esta conversación todavía. ¡Envía un saludo!</p>
+                    </div>
+                   ) :
                    messages.map(msg => {
-                    const isOwn = msg.senderId === user?.uid;
+                    const isOwn = msg.senderId === (userProfile?.uid || user?.uid);
+                    // Determine sender details (could be current user or other participant)
+                    // For mock purposes, assume if not own, it's otherParticipantDetails
                     const senderDetails = isOwn ? userProfile : otherParticipantDetails;
                     return (
                       <div key={msg.id} className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
@@ -262,7 +261,7 @@ export default function MessagesPage() {
                             {!isOwn && <p className="text-xs font-semibold mb-0.5">{senderDetails?.alias}</p>}
                             <p className="text-sm whitespace-pre-wrap">{msg.text /* This would be decrypted text */}</p>
                             <p className={`text-xs mt-1 ${isOwn ? "text-primary-foreground/70" : "text-muted-foreground/70"} ${isOwn ? 'text-right' : 'text-left'}`}>
-                              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {msg.timestamp instanceof Date ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(msg.timestamp?.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>
                         </div>
@@ -275,14 +274,14 @@ export default function MessagesPage() {
                 <div className="flex items-center gap-2">
                   <Input
                     type="text"
-                    placeholder="Type your message (not encrypted)..."
+                    placeholder="Escribe tu mensaje (no cifrado)..."
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
                     className="flex-1"
-                    aria-label="Chat message input"
+                    aria-label="Entrada de mensaje de chat"
                   />
-                  <Button type="submit" size="icon" aria-label="Send message" disabled={!newMessage.trim()}>
-                    <Send className="h-4 w-4" />
+                  <Button type="submit" size="icon" aria-label="Enviar mensaje" disabled={!newMessage.trim() || loadingMessages}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                   </Button>
                 </div>
               </form>
@@ -290,7 +289,8 @@ export default function MessagesPage() {
           ) : (
             <CardContent className="flex flex-col items-center justify-center h-full">
               <MessageSquareIcon className="w-16 h-16 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Select a conversation to start chatting.</p>
+              <p className="text-muted-foreground">Selecciona una conversación para empezar a chatear.</p>
+               <p className="text-xs text-muted-foreground mt-2">(O crea una nueva desde el perfil de un usuario).</p>
             </CardContent>
           )}
         </Card>
