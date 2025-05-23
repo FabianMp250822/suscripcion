@@ -39,6 +39,7 @@ const navItems: NavItem[] = [
   { href: "/subscriptions-management", label: "Subscriptions", icon: Icons.Subscriptions, allowedRoles: ["admin"], segment: "subscriptions-management" },
   { href: "/shared-groups", label: "Shared Groups", icon: Icons.SharedGroups, allowedRoles: ["admin"], segment: "shared-groups" },
   { href: "/payment-transactions", label: "Payment Transactions", icon: Icons.AdminPaymentTransactions, allowedRoles: ["admin"], segment: "payment-transactions" },
+  { href: "/disputes", label: "Disputes", icon: Icons.Disputes, allowedRoles: ["admin"], segment: "disputes" },
   { href: "/reports", label: "Reports", icon: Icons.Reports, allowedRoles: ["admin"], segment: "reports" },
   { href: "/settings", label: "Admin Settings", icon: Icons.Settings, allowedRoles: ["admin"], segment: "settings" },
   // Sharer
@@ -50,6 +51,7 @@ const navItems: NavItem[] = [
   // All logged-in users
   { href: "/browse-groups", label: "Browse Groups", icon: Icons.BrowseGroups, allowedRoles: ["admin", "sharer", "subscriber"], segment: "browse-groups"},
   { href: "/messages", label: "Messages", icon: Icons.Messages, allowedRoles: ["admin", "sharer", "subscriber"], segment: "messages"},
+  { href: "/my-disputes", label: "My Disputes", icon: Icons.MyDisputes, allowedRoles: ["sharer", "subscriber"], segment: "my-disputes" },
 ];
 
 interface PanelLayoutClientProps {
@@ -66,7 +68,7 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
       router.replace("/login");
     }
     if (!loading && user && pathname === "/login") {
-        if (isAdmin) router.replace("/users");
+        if (isAdmin) router.replace("/users"); // Default admin page
         else if (isSharer) router.replace("/my-listings"); 
         else router.replace("/browse-groups"); 
     }
@@ -95,29 +97,35 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   const currentUserRoles: ("admin" | "sharer" | "subscriber")[] = [];
   if (isAdmin) {
     currentUserRoles.push("admin");
-  } else {
-    // For non-admins:
-    // AuthContext sets isSharer if the 'sharer' role exists.
-    // AuthContext sets isSubscriber if 'subscriber' role exists, or if 'sharer' role exists, or if no specific roles (defaults to subscriber).
+  } else { // Non-admin users can be sharer, subscriber, or both
     if (isSharer) {
       currentUserRoles.push("sharer");
     }
-    if (isSubscriber) { // This will be true for all non-admin users.
-      currentUserRoles.push("subscriber");
+    if (isSubscriber) {
+      // Ensure subscriber role is added if user is sharer or explicitly subscriber.
+      // This covers cases where a user might primarily be a sharer but still acts as a subscriber for other services.
+      if (!currentUserRoles.includes("subscriber")) {
+          currentUserRoles.push("subscriber");
+      }
     }
+  }
+  // Fallback for users with no specific roles from Firestore yet, but are authenticated (should be rare with current AuthContext logic)
+  if (user && currentUserRoles.length === 0 && !isAdmin) {
+    currentUserRoles.push("subscriber"); // Default to subscriber if authenticated but no specific roles (excluding admin)
   }
 
 
-  const accessibleNavItems = navItems.filter(item =>
-    item.allowedRoles.some(role => currentUserRoles.includes(role))
-  );
+  const accessibleNavItems = navItems.filter(item => {
+    if (item.allowedRoles.length === 0) return true; // No roles specified means accessible to all
+    return item.allowedRoles.some(role => currentUserRoles.includes(role));
+  });
   
   const getActiveSegment = () => {
     const segments = pathname.split('/').filter(Boolean);
     if (segments.length > 0) {
-        if (segments[0] === 'manage-group' && segments.length > 1) {
-            if(isSharer) return 'my-listings'; 
-            return segments[0]; 
+        // Specific handling for /manage-group/[groupId] to keep /my-listings active for sharers
+        if (segments[0] === 'manage-group' && segments.length > 1 && isSharer) {
+            return 'my-listings'; 
         }
         return segments[0];
     }
@@ -127,11 +135,9 @@ export default function PanelLayoutClient({ children }: PanelLayoutClientProps) 
   
   const isLinkActive = (item: NavItem) => {
     if (item.segment) {
-      if (item.segment === 'my-listings' && pathname.startsWith('/manage-group')) {
-        return true;
-      }
       return activeSegment === item.segment;
     }
+    // Fallback for items without a specific segment, direct href match
     return pathname === item.href;
   };
 
