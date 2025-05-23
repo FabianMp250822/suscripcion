@@ -7,10 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
 import { db } from "@/lib/firebase/config";
-import { collection, onSnapshot, query, orderBy, Timestamp, type DocumentData, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, Timestamp, type DocumentData, doc, updateDoc, getDoc } from "firebase/firestore";
 import { Loader2, ListX, MoreHorizontal, Eye, AlertCircle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
 type ListingStatus = "Activo" | "Reclutando" | "Suspendido" | "Lleno" | "Desconocido";
@@ -19,18 +21,23 @@ interface Group {
   id: string;
   name: string;
   service: string;
-  sharerName: string; // Name of the SuscripGrupo user who listed it
-  sharerId: string; // UID of the SuscripGrupo user
+  sharerName: string;
+  sharerId: string;
+  sharerEmail: string; // Added sharer's email
   members: number;
   maxMembers: number;
   status: ListingStatus;
   created: string;
   icon: string;
+  pricePerSpot?: number; // Assuming listings have this
+  listingDescription?: string; // Assuming listings have this
 }
 
 export default function AdminSharedGroupsPage() {
   const [fetchedGroups, setFetchedGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -38,25 +45,43 @@ export default function AdminSharedGroupsPage() {
     const listingsRef = collection(db, "listings");
     const q = query(listingsRef, orderBy("createdAt", "desc"));
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const groupsData: Group[] = [];
-      querySnapshot.forEach((docSnapshot) => { // Renamed doc to docSnapshot to avoid conflict
+    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
+      const groupsDataPromises: Promise<Group | null>[] = querySnapshot.docs.map(async (docSnapshot) => {
         const data = docSnapshot.data() as DocumentData;
         const createdAtTimestamp = data.createdAt as Timestamp;
-        groupsData.push({
+
+        let sharerEmail = "No disponible";
+        if (data.sharerId) {
+          try {
+            const userDocRef = doc(db, "users", data.sharerId);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists()) {
+              sharerEmail = userDocSnap.data()?.email || "No disponible";
+            }
+          } catch (emailError) {
+            console.error("Error fetching sharer email: ", emailError);
+          }
+        }
+
+        return {
           id: docSnapshot.id,
           name: data.serviceName || "N/A",
           service: data.serviceName || "N/A",
           sharerName: data.sharerName || "Desconocido",
           sharerId: data.sharerId || "N/A",
+          sharerEmail: sharerEmail,
           members: (data.totalSpots || 0) - (data.spotsAvailable || 0),
           maxMembers: data.totalSpots || 0,
           status: data.status as ListingStatus || "Desconocido",
           created: createdAtTimestamp ? createdAtTimestamp.toDate().toLocaleDateString() : "N/A",
           icon: data.iconUrl || `https://placehold.co/40x40.png?text=${(data.serviceName || "S").substring(0,1)}`,
-        });
+          pricePerSpot: data.pricePerSpot,
+          listingDescription: data.listingDescription,
+        };
       });
-      setFetchedGroups(groupsData);
+
+      const resolvedGroupsData = (await Promise.all(groupsDataPromises)).filter(group => group !== null) as Group[];
+      setFetchedGroups(resolvedGroupsData);
       setLoading(false);
     }, (error) => {
       console.error("Error fetching shared groups: ", error);
@@ -82,17 +107,13 @@ export default function AdminSharedGroupsPage() {
       case 'lleno':
         return 'bg-gray-500/20 text-gray-700 border-gray-500/30';
       default:
-        return 'bg-slate-500/20 text-slate-700 border-slate-500/30'; // For "Desconocido" or other
+        return 'bg-slate-500/20 text-slate-700 border-slate-500/30';
     }
   };
 
-  const handleViewDetails = (groupId: string) => {
-    console.log("Viewing details for group:", groupId);
-    // TODO: Implement modal or navigation to a detail page
-    toast({
-      title: "Acción Pendiente",
-      description: `La visualización de detalles para el grupo ${groupId} aún no está implementada.`,
-    });
+  const handleViewDetails = (group: Group) => {
+    setSelectedGroup(group);
+    setIsDetailsModalOpen(true);
   };
 
   const handleToggleListingStatus = async (listingId: string, currentStatus: ListingStatus) => {
@@ -138,7 +159,7 @@ export default function AdminSharedGroupsPage() {
                 <TableRow>
                   <TableHead className="w-[60px]">Ícono</TableHead>
                   <TableHead>Nombre del Servicio</TableHead>
-                  <TableHead>Propietario (Sharer)</TableHead>
+                  <TableHead>Propietario (Email)</TableHead>
                   <TableHead>Miembros</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha de Creación</TableHead>
@@ -152,7 +173,7 @@ export default function AdminSharedGroupsPage() {
                       <Image src={group.icon} alt={group.service} width={32} height={32} className="rounded-sm" data-ai-hint="app logo" />
                     </TableCell>
                     <TableCell className="font-medium">{group.name}</TableCell>
-                    <TableCell>{group.sharerName} ({group.sharerId.substring(0,6)}...)</TableCell>
+                    <TableCell>{group.sharerName} <span className="text-xs text-muted-foreground">({group.sharerEmail})</span></TableCell>
                     <TableCell>{group.members}/{group.maxMembers}</TableCell>
                     <TableCell>
                       <Badge className={getStatusBadgeVariant(group.status)}>
@@ -170,7 +191,7 @@ export default function AdminSharedGroupsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                          <DropdownMenuItem onClick={() => handleViewDetails(group.id)}>
+                          <DropdownMenuItem onClick={() => handleViewDetails(group)}>
                             <Eye className="mr-2 h-4 w-4" /> Ver Detalles
                           </DropdownMenuItem>
                           {(group.status === "Activo" || group.status === "Reclutando") && (
@@ -199,7 +220,46 @@ export default function AdminSharedGroupsPage() {
           )}
         </CardContent>
       </Card>
+
+      {selectedGroup && (
+        <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Detalles del Grupo Compartido</DialogTitle>
+              <DialogDescription>Información completa de la publicación ID: {selectedGroup.id}</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-6 max-h-[70vh] overflow-y-auto pr-2">
+              <div className="flex items-center gap-4">
+                <Image src={selectedGroup.icon} alt={selectedGroup.name} width={64} height={64} className="rounded-md border bg-muted p-1" data-ai-hint="app logo" />
+                <div>
+                  <h3 className="text-xl font-semibold">{selectedGroup.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedGroup.service}</p>
+                </div>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div><Label className="font-semibold">Propietario (Sharer):</Label> {selectedGroup.sharerName} ({selectedGroup.sharerEmail})</div>
+                <div><Label className="font-semibold">ID del Propietario:</Label> {selectedGroup.sharerId}</div>
+                <div><Label className="font-semibold">Miembros:</Label> {selectedGroup.members} de {selectedGroup.maxMembers}</div>
+                <div><Label className="font-semibold">Estado de Publicación:</Label> <Badge className={getStatusBadgeVariant(selectedGroup.status)}>{selectedGroup.status}</Badge></div>
+                <div><Label className="font-semibold">Precio por Cupo (Establecido por Sharer):</Label> ${selectedGroup.pricePerSpot?.toFixed(2) || 'N/A'}</div>
+                <div><Label className="font-semibold">Fecha de Creación:</Label> {selectedGroup.created}</div>
+                {selectedGroup.listingDescription && (
+                  <div>
+                    <Label className="font-semibold">Descripción de la Publicación:</Label>
+                    <p className="mt-1 p-2 border rounded-md bg-muted/50 whitespace-pre-wrap">{selectedGroup.listingDescription}</p>
+                  </div>
+                )}
+              </div>
+              
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cerrar</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
-
