@@ -1,4 +1,6 @@
 
+"use client"; // Add "use client" for useState and useEffect
+
 import type { Metadata } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -9,6 +11,20 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, Users, DollarSign, ShieldCheck, MessageCircle, Search, CreditCard, Lock, Zap, Award } from 'lucide-react';
 import { Icons } from '@/components/icons';
+import { useState, useEffect } from 'react'; // Import useState and useEffect
+
+// Define an interface for subscription data for type safety
+interface SubscriptionOffer {
+  id: string;
+  name: string;
+  type: string;
+  price: number;
+  currency: string;
+  availability: string;
+  icon: string;
+  dataAiHint: string;
+}
+
 
 export const metadata: Metadata = {
   title: 'SuscripGrupo: Comparte y Ahorra en Suscripciones',
@@ -77,14 +93,6 @@ const faqItems = [
   }
 ];
 
-// Prices here reflect FINAL PRICE to participant (Sharer's desired price + service fee)
-const availableSubscriptionsMock = [
-  { id: "s1", name: "Netflix Premium", type: "Cupo en Plan Familiar 4K", price: 4.70, currency: "USD", availability: "2 cupos disponibles", icon: "https://placehold.co/80x80.png/E50914/FFFFFF?text=N", dataAiHint: "netflix logo" },
-  { id: "s2", name: "Spotify Premium", type: "Lugar en Plan Dúo", price: 3.25, currency: "USD", availability: "1 cupo disponible", icon: "https://placehold.co/80x80.png/1ED760/FFFFFF?text=S", dataAiHint: "spotify logo" },
-  { id: "s3", name: "HBO Max Standard", type: "Acceso Compartido", price: 5.30, currency: "USD", availability: "3 cupos disponibles", icon: "https://placehold.co/80x80.png/7E4FF6/FFFFFF?text=H", dataAiHint: "hbo logo" },
-  { id: "s4", name: "Disney+ Anual", type: "Cupo en Plan Familiar", price: 2.35, currency: "USD", availability: "SOLD OUT", icon: "https://placehold.co/80x80.png/0063E5/FFFFFF?text=D", dataAiHint: "disney logo" },
-];
-
 const trustPillars = [
   { title: "Pagos Protegidos", description: "Utilizamos pasarelas de pago cifradas y seguras (Stripe) para proteger cada transacción.", icon: Lock },
   { title: "Garantía de Acceso", description: "Nuestro sistema de arbitraje asegura tu acceso o te ayudamos a resolverlo.", icon: ShieldCheck },
@@ -93,6 +101,20 @@ const trustPillars = [
 ];
 
 export default function LandingPage() {
+  const [popularSubscriptions, setPopularSubscriptions] = useState<SubscriptionOffer[]>([]);
+
+  useEffect(() => {
+    // TODO: Fetch popular subscriptions from Firestore
+    // Example:
+    // const fetchPopularSubscriptions = async () => {
+    //   // Firestore query logic here
+    //   // const fetchedData = await getDocs(collection(db, "listings").where("isPopular", "==", true).limit(4));
+    //   // setPopularSubscriptions(fetchedData.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubscriptionOffer)));
+    // };
+    // fetchPopularSubscriptions();
+  }, []);
+
+
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -157,7 +179,7 @@ export default function LandingPage() {
     }))
   };
 
-  const productSchemaExample = availableSubscriptionsMock.slice(0, 2).map(sub => ({
+  const productSchemaExample = popularSubscriptions.slice(0, 2).map(sub => ({ // Use popularSubscriptions state
     "@context": "https://schema.org",
     "@type": "Product",
     "name": `${sub.name} - ${sub.type} (Cupo en SuscripGrupo)`,
@@ -199,7 +221,7 @@ export default function LandingPage() {
 
       <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-400 via-blue-300 to-sky-200 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         {/* Hero Section */}
-        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080.png/41a7fc/FFFFFF?text=Servicios+Digitales')" }} data-ai-hint="digital services collage abstract">
+        <section className="py-20 md:py-32 text-center bg-cover bg-center" style={{ backgroundImage: "url('https://placehold.co/1920x1080/41a7fc/FFFFFF?text=Servicios+Digitales')" }} data-ai-hint="digital services collage abstract">
           <div className="container mx-auto px-4 bg-black/40 dark:bg-black/60 py-10 rounded-xl backdrop-blur-sm">
             <Link href="/" className="inline-block mx-auto mb-6">
               <Icons.Logo className="h-20 w-20 text-primary transition-transform duration-300 hover:scale-110" />
@@ -208,7 +230,7 @@ export default function LandingPage() {
               SuscripGrupo: Plataforma para Compartir Suscripciones y <span className="text-primary">Dividir Gastos</span> de Forma Segura
             </h1>
             <p className="text-lg md:text-xl text-slate-100 dark:text-slate-200 mb-10 max-w-3xl mx-auto">
-              Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza y gestionando tus grupos de forma sencilla en SuscripGrupo.
+              Ahorra hasta un 70% en servicios como Netflix, Spotify y más, conectando con personas de confianza y gestionando tus grupos de forma sencilla en SuscripGrupo. Pagos procesados vía Stripe.
             </p>
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg transform hover:scale-105 transition-transform duration-300">
@@ -252,43 +274,50 @@ export default function LandingPage() {
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Suscripciones Populares en SuscripGrupo</h2>
               <p className="text-lg text-muted-foreground mt-2">Descubre algunos de los servicios que puedes compartir o unirte.</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-              {availableSubscriptionsMock.map((sub) => (
-                <Card key={sub.id} className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col overflow-hidden rounded-xl border-border">
-                  <CardHeader className="p-0">
-                    <Image
-                      src={sub.icon}
-                      alt={sub.name}
-                      width={400}
-                      height={200}
-                      className="w-full h-40 object-contain p-4 bg-slate-100 dark:bg-slate-700"
-                      data-ai-hint={sub.dataAiHint}
-                    />
-                  </CardHeader>
-                  <CardContent className="p-6 flex-1 flex flex-col">
-                    <h3 className="text-xl font-semibold text-foreground mb-1">{sub.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>
-                    <div className="mt-auto">
-                      <p className="text-2xl font-bold text-primary mb-1">${sub.price.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
-                       <p className="text-xs text-muted-foreground">(Precio final. Incluye tarifa de servicio.)</p>
-                      <Badge
-                        variant={sub.availability.toLowerCase().includes("sold out") ? "destructive" : "default"}
-                        className={`${sub.availability.toLowerCase().includes("sold out") ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
-                      >
-                        {sub.availability}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="p-4 bg-slate-50 dark:bg-slate-700/50 border-t">
-                     <Button className="w-full bg-primary hover:bg-primary/90" asChild disabled={sub.availability.toLowerCase().includes("sold out")}>
-                        <Link href={`/browse-groups?service=${encodeURIComponent(sub.name)}`}>
-                            Ver Detalles
-                        </Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+            {popularSubscriptions.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                {popularSubscriptions.map((sub) => (
+                  <Card key={sub.id} className="shadow-lg hover:shadow-2xl transition-shadow duration-300 flex flex-col overflow-hidden rounded-xl border-border">
+                    <CardHeader className="p-0">
+                      <Image
+                        src={sub.icon}
+                        alt={sub.name}
+                        width={400}
+                        height={200}
+                        className="w-full h-40 object-contain p-4 bg-slate-100 dark:bg-slate-700"
+                        data-ai-hint={sub.dataAiHint}
+                      />
+                    </CardHeader>
+                    <CardContent className="p-6 flex-1 flex flex-col">
+                      <h3 className="text-xl font-semibold text-foreground mb-1">{sub.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-3">{sub.type}</p>
+                      <div className="mt-auto">
+                        <p className="text-2xl font-bold text-primary mb-1">${sub.price.toFixed(2)} <span className="text-sm font-normal text-muted-foreground">/mes</span></p>
+                        <p className="text-xs text-muted-foreground">(Precio final. Incluye tarifa de servicio. Desglose antes del pago.)</p>
+                        <Badge
+                          variant={sub.availability.toLowerCase().includes("sold out") ? "destructive" : "default"}
+                          className={`${sub.availability.toLowerCase().includes("sold out") ? "bg-red-100 text-red-700 border-red-300" : "bg-green-100 text-green-700 border-green-300"} mt-1`}
+                        >
+                          {sub.availability}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="p-4 bg-slate-50 dark:bg-slate-700/50 border-t">
+                      <Button className="w-full bg-primary hover:bg-primary/90" asChild disabled={sub.availability.toLowerCase().includes("sold out")}>
+                          <Link href={`/browse-groups?service=${encodeURIComponent(sub.name)}`}>
+                              Ver Detalles
+                          </Link>
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10">
+                <Search className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No hay suscripciones populares para mostrar en este momento. ¡Vuelve pronto!</p>
+              </div>
+            )}
              <div className="text-center mt-12">
                 <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
                     <Link href="/browse-groups">
@@ -354,5 +383,3 @@ export default function LandingPage() {
     </>
   );
 }
-
-    
